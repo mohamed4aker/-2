@@ -31,8 +31,8 @@ class _SearchScreenState extends State<SearchScreen> {
     final maxPrice = provider.maxPrice;
     final stored = _priceRange ?? RangeValues(0, maxPrice);
     final range = RangeValues(
-      stored.start.clamp(0, maxPrice),
-      stored.end.clamp(0, maxPrice),
+      stored.start.clamp(0, maxPrice).toDouble(),
+      stored.end.clamp(0, maxPrice).toDouble(),
     );
 
     final results = provider.search(
