@@ -10,7 +10,8 @@ import 'admin_categories_screen.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_orders_screen.dart';
 import 'admin_products_screen.dart';
-import 'sales_report_screen.dart';
+import 'admin_settings_screen.dart';
+import 'reports_hub_screen.dart';
 
 /// الهيكل الرئيسي للوحة تحكم الأدمن.
 class AdminShell extends StatefulWidget {
@@ -26,17 +27,17 @@ class _AdminShellState extends State<AdminShell> {
   static const _titles = [
     'لوحة التحكم',
     'المنتجات',
-    'التصنيفات',
     'الطلبات',
     'التقارير',
+    'الإعدادات',
   ];
 
   static const _screens = [
     AdminDashboardScreen(),
     AdminProductsScreen(),
-    AdminCategoriesScreen(),
     AdminOrdersScreen(),
-    SalesReportScreen(),
+    ReportsHubScreen(),
+    AdminSettingsScreen(),
   ];
 
   @override
@@ -64,6 +65,18 @@ class _AdminShellState extends State<AdminShell> {
       appBar: AppBar(
         title: Text(_titles[_index]),
         actions: [
+          IconButton(
+            tooltip: 'التصنيفات',
+            icon: const Icon(Icons.category_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('التصنيفات')),
+                  body: const AdminCategoriesScreen(),
+                ),
+              ),
+            ),
+          ),
           IconButton(
             tooltip: 'عرض المتجر',
             icon: const Icon(Icons.storefront_outlined),
@@ -96,11 +109,6 @@ class _AdminShellState extends State<AdminShell> {
             label: 'المنتجات',
           ),
           NavigationDestination(
-            icon: Icon(Icons.category_outlined),
-            selectedIcon: Icon(Icons.category, color: Colors.white),
-            label: 'التصنيفات',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
             selectedIcon: Icon(Icons.receipt_long, color: Colors.white),
             label: 'الطلبات',
@@ -109,6 +117,11 @@ class _AdminShellState extends State<AdminShell> {
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart, color: Colors.white),
             label: 'التقارير',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings, color: Colors.white),
+            label: 'الإعدادات',
           ),
         ],
       ),

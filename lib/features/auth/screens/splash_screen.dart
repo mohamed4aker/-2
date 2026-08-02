@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../admin/screens/admin_shell.dart';
+import '../../favorites/providers/favorites_provider.dart';
+import '../../notifications/providers/notifications_provider.dart';
 import '../../products/providers/products_provider.dart';
+import '../../products/providers/reviews_provider.dart';
 import '../../products/screens/customer_shell.dart';
+import '../../settings/providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -23,11 +27,29 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _bootstrap() async {
     final auth = context.read<AuthProvider>();
     final products = context.read<ProductsProvider>();
+    final settings = context.read<SettingsProvider>();
+    final notifications = context.read<NotificationsProvider>();
+    final favorites = context.read<FavoritesProvider>();
+    final reviews = context.read<ReviewsProvider>();
+
     await Future.wait([
       auth.tryAutoLogin(),
       products.load(),
-      Future.delayed(const Duration(milliseconds: 1500)),
+      settings.load(),
+      notifications.load(),
+      favorites.load(),
+      reviews.load(),
+      Future.delayed(const Duration(milliseconds: 1400)),
     ]);
+
+    // فحص المنتجات الجديدة وغياب العميل بعد تحميل البيانات.
+    if (!auth.isAdmin) {
+      await notifications.runAutoChecks(
+        products: products.products,
+        settings: settings.settings,
+      );
+    }
+
     if (!mounted) return;
     final next = auth.isAdmin ? const AdminShell() : const CustomerShell();
     Navigator.of(context).pushReplacement(

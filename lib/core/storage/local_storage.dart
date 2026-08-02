@@ -11,6 +11,12 @@ class LocalStorage {
   static const String keyAuthToken = 'auth_token';
   static const String keyCartItems = 'cart_items';
   static const String keyRegisteredUsers = 'registered_users';
+  static const String keyStoreSettings = 'store_settings';
+  static const String keyFavorites = 'favorites';
+  static const String keyNotifications = 'notifications';
+  static const String keyLastOpened = 'last_opened_at';
+  static const String keySeenProductIds = 'seen_product_ids';
+  static const String keyReviews = 'product_reviews';
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();

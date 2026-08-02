@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../auth/screens/account_screen.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../cart/screens/cart_screen.dart';
-import '../../orders/screens/my_orders_screen.dart';
+import '../../favorites/screens/favorites_screen.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
 
@@ -22,8 +22,8 @@ class _CustomerShellState extends State<CustomerShell> {
   static const _screens = [
     HomeScreen(),
     SearchScreen(),
+    FavoritesScreen(),
     CartScreen(),
-    MyOrdersScreen(),
     AccountScreen(),
   ];
 
@@ -49,6 +49,11 @@ class _CustomerShellState extends State<CustomerShell> {
             selectedIcon: Icon(Icons.search, color: Colors.white),
             label: 'البحث',
           ),
+          const NavigationDestination(
+            icon: Icon(Icons.favorite_border),
+            selectedIcon: Icon(Icons.favorite, color: Colors.white),
+            label: 'المفضلة',
+          ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: cartCount > 0,
@@ -65,11 +70,6 @@ class _CustomerShellState extends State<CustomerShell> {
               child: const Icon(Icons.shopping_bag, color: Colors.white),
             ),
             label: 'السلة',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long, color: Colors.white),
-            label: 'طلباتي',
           ),
           const NavigationDestination(
             icon: Icon(Icons.person_outline),

@@ -7,6 +7,7 @@ import '../../../core/widgets/product_image.dart';
 import '../../orders/providers/orders_provider.dart';
 import '../../orders/screens/my_orders_screen.dart' show OrderStatusChip;
 import '../../products/providers/products_provider.dart';
+import '../../settings/providers/settings_provider.dart';
 import 'admin_order_details_screen.dart';
 
 /// لوحة التحكم: إحصائيات + تنبيه المخزون المنخفض + أحدث الطلبات.
@@ -17,7 +18,9 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersProvider>();
     final products = context.watch<ProductsProvider>();
-    final lowStock = products.lowStock;
+    final threshold =
+        context.watch<SettingsProvider>().settings.lowStockThreshold;
+    final lowStock = products.lowStockBelow(threshold);
     final recentOrders = orders.allOrders.take(5).toList();
 
     return RefreshIndicator(

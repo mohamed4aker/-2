@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../../core/config/api_config.dart';
 import '../../../core/storage/local_storage.dart';
 import 'models/app_user.dart';
 
@@ -10,6 +11,12 @@ abstract class AuthRepository {
 
   /// تسجيل عميل جديد برقم الهاتف.
   Future<AppUser> register(String name, String phone, String password);
+
+  /// تسجيل الدخول بحساب جوجل.
+  Future<AppUser> loginWithGoogle();
+
+  /// الدخول كضيف (للطلب من غير تسجيل).
+  Future<AppUser> continueAsGuest();
 }
 
 /// تنفيذ تجريبي: حساب الأدمن ثابت، وحسابات العملاء تُحفظ في التخزين المحلي.
@@ -19,7 +26,7 @@ class MockAuthRepository implements AuthRepository {
   /// حساب صاحب المتجر (للاختبار).
   static const AppUser _admin = AppUser(
     id: 'admin_1',
-    name: 'صاحبة المتجر',
+    name: 'صاحب المتجر',
     phone: '01000000000',
     email: 'admin@store.com',
     password: '123456',
@@ -82,5 +89,79 @@ class MockAuthRepository implements AuthRepository {
     users.add(user);
     await _saveRegisteredUsers(users);
     return user;
+  }
+
+  /// ------------------------------------------------------------------
+  /// تسجيل الدخول بجوجل
+  ///
+  /// النسخة دي تجريبية بتنشئ حساب جوجل وهمي عشان التطبيق يشتغل من غير
+  /// أي إعدادات خارجية.
+  ///
+  /// **للتفعيل الحقيقي:**
+  /// 1. ضيف الحزمة في pubspec.yaml:  google_sign_in: ^6.2.1
+  /// 2. اعمل مشروع على https://console.firebase.google.com
+  /// 3. حمّل ملف google-services.json وحطه في android/app/
+  /// 4. سجّل بصمة SHA-1 بتاعتك في Firebase:
+  ///    cd android && ./gradlew signingReport
+  /// 5. حط الـ Client ID في ApiConfig.googleWebClientId
+  /// 6. بدّل الكود اللي تحت بـ:
+  ///
+  ///    final account = await GoogleSignIn(
+  ///      clientId: ApiConfig.googleWebClientId,
+  ///    ).signIn();
+  ///    if (account == null) throw Exception('تم إلغاء تسجيل الدخول');
+  ///    return AppUser(
+  ///      id: 'g_${account.id}',
+  ///      name: account.displayName ?? 'مستخدم جوجل',
+  ///      phone: '',
+  ///      email: account.email,
+  ///      password: '',
+  ///      role: UserRole.customer,
+  ///      provider: AuthMethod.google,
+  ///      photoUrl: account.photoUrl,
+  ///    );
+  /// ------------------------------------------------------------------
+  @override
+  Future<AppUser> loginWithGoogle() async {
+    await Future.delayed(_delay);
+
+    if (ApiConfig.isGoogleConfigured) {
+      throw Exception(
+        'بيانات جوجل موجودة لكن الحزمة لسه مفعّلة — راجع تعليمات '
+        'التفعيل في ملف auth_repository.dart',
+      );
+    }
+
+    final users = _loadRegisteredUsers();
+    // نستخدم نفس حساب جوجل التجريبي لو اتسجل قبل كده.
+    for (final user in users) {
+      if (user.provider == AuthMethod.google) return user;
+    }
+
+    final user = AppUser(
+      id: 'g_${DateTime.now().millisecondsSinceEpoch}',
+      name: 'حساب جوجل تجريبي',
+      phone: '',
+      email: 'google.user@gmail.com',
+      password: '',
+      role: UserRole.customer,
+      provider: AuthMethod.google,
+    );
+    users.add(user);
+    await _saveRegisteredUsers(users);
+    return user;
+  }
+
+  @override
+  Future<AppUser> continueAsGuest() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return AppUser(
+      id: 'guest_${DateTime.now().millisecondsSinceEpoch}',
+      name: 'ضيف',
+      phone: '',
+      password: '',
+      role: UserRole.customer,
+      provider: AuthMethod.guest,
+    );
   }
 }

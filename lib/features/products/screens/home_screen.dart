@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../notifications/providers/notifications_provider.dart';
+import '../../notifications/screens/notifications_screen.dart';
 import '../providers/products_provider.dart';
 import '../widgets/home_banner.dart';
 import '../widgets/product_card.dart';
 import '../widgets/section_title.dart';
+import '../widgets/ticker_bar.dart';
 import 'category_products_screen.dart';
 
-/// الصفحة الرئيسية: بانرات + تصنيفات + منتجات مميزة + وصل حديثاً.
+/// الصفحة الرئيسية: الشريط المتحرك + بانرات + تصنيفات + مميزة + وصل حديثاً.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -23,10 +26,28 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProductsProvider>();
+    final unread = context.watch<NotificationsProvider>().unreadCount;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('أ ن ا ق ة'),
+        actions: [
+          IconButton(
+            tooltip: 'الإشعارات',
+            icon: Badge(
+              isLabelVisible: unread > 0,
+              label: Text('$unread'),
+              backgroundColor: Colors.white,
+              textColor: Colors.black,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NotificationsScreen(),
+              ),
+            ),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () => provider.load(force: true),
@@ -34,8 +55,10 @@ class HomeScreen extends StatelessWidget {
             ? const Center(child: CircularProgressIndicator())
             : ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(top: 16, bottom: 24),
+                padding: const EdgeInsets.only(bottom: 24),
                 children: [
+                  // الشريط المتحرك (يتحكم فيه الأدمن من الإعدادات)
+                  const TickerBar(),
                   const HomeBanner(),
                   const SizedBox(height: 16),
                   // التصنيفات
@@ -111,6 +134,25 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  // عروض وخصومات
+                  if (provider.discounted.isNotEmpty) ...[
+                    const SectionTitle(title: 'عروض وخصومات'),
+                    SizedBox(
+                      height: 250,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: provider.discounted.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(width: 12),
+                        itemBuilder: (context, index) => ProductCard(
+                          product: provider.discounted[index],
+                          width: 170,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   // وصل حديثاً
                   const SectionTitle(title: 'وصل حديثاً'),
                   GridView.builder(

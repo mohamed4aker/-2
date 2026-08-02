@@ -19,6 +19,7 @@ class AuthProvider extends ChangeNotifier {
   AppUser? get user => _user;
   bool get isLoggedIn => _user != null;
   bool get isAdmin => _user?.isAdmin ?? false;
+  bool get isGuest => _user?.isGuest ?? false;
   bool get loading => _loading;
   String? get error => _error;
 
@@ -27,41 +28,53 @@ class AuthProvider extends ChangeNotifier {
     final raw = LocalStorage.getString(LocalStorage.keyAuthUser);
     if (raw == null || raw.isEmpty) return;
     try {
-      _user = AppUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      final user = AppUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      // جلسات الضيوف ما بتتحفظش بين مرات التشغيل.
+      if (user.isGuest) {
+        await LocalStorage.remove(LocalStorage.keyAuthUser);
+        return;
+      }
+      _user = user;
       notifyListeners();
     } catch (_) {
       await LocalStorage.remove(LocalStorage.keyAuthUser);
     }
   }
 
-  Future<bool> login(String identifier, String password) async {
+  Future<bool> login(String identifier, String password) =>
+      _run(() => _repository.login(identifier, password));
+
+  Future<bool> register(String name, String phone, String password) =>
+      _run(() => _repository.register(name, phone, password));
+
+  Future<bool> loginWithGoogle() => _run(_repository.loginWithGoogle);
+
+  Future<bool> continueAsGuest() =>
+      _run(_repository.continueAsGuest, persist: false);
+
+  Future<bool> _run(
+    Future<AppUser> Function() action, {
+    bool persist = true,
+  }) async {
     _setLoading(true);
     try {
-      _user = await _repository.login(identifier, password);
-      await _persistSession();
+      _user = await action();
+      if (persist) await _persistSession();
       _error = null;
       return true;
     } catch (e) {
-      _error = _cleanError(e);
+      _error = e.toString().replaceFirst('Exception: ', '');
       return false;
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<bool> register(String name, String phone, String password) async {
-    _setLoading(true);
-    try {
-      _user = await _repository.register(name, phone, password);
-      await _persistSession();
-      _error = null;
-      return true;
-    } catch (e) {
-      _error = _cleanError(e);
-      return false;
-    } finally {
-      _setLoading(false);
-    }
+  /// يحوّل حساب الضيف لحساب دائم بعد ما يقرر يسجّل.
+  Future<void> upgradeGuest(AppUser user) async {
+    _user = user;
+    await _persistSession();
+    notifyListeners();
   }
 
   Future<void> logout() async {
@@ -83,9 +96,6 @@ class AuthProvider extends ChangeNotifier {
       'mock-token-${_user!.id}',
     );
   }
-
-  String _cleanError(Object e) =>
-      e.toString().replaceFirst('Exception: ', '');
 
   void _setLoading(bool value) {
     _loading = value;

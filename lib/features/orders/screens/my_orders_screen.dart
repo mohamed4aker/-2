@@ -10,8 +10,9 @@ import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
 import '../data/models/order.dart';
 import '../providers/orders_provider.dart';
+import 'receipt_screen.dart';
 
-/// طلبات العميل مع متابعة حالة كل طلب.
+/// طلبات العميل مع متابعة حالة كل طلب والإيصال وإمكانية الإلغاء.
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
 
@@ -28,7 +29,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     final userId = context.watch<AuthProvider>().user?.id;
     if (userId != null && userId != _loadedForUserId) {
       _loadedForUserId = userId;
-      // تحميل الطلبات بعد اكتمال بناء الشاشة.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.read<OrdersProvider>().loadMine(userId);
       });
@@ -45,7 +45,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       body: !auth.isLoggedIn
           ? EmptyView(
               icon: Icons.receipt_long_outlined,
-              title: 'سجلي الدخول لعرض طلباتك',
+              title: 'سجّل دخولك لعرض طلباتك',
               action: AppButton(
                 label: 'تسجيل الدخول',
                 onPressed: () => Navigator.of(context).push(
@@ -59,11 +59,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                   ? const EmptyView(
                       icon: Icons.receipt_long_outlined,
                       title: 'لا توجد طلبات بعد',
-                      subtitle: 'ابدئي التسوق وسيظهر طلبك هنا',
+                      subtitle: 'ابدأ التسوق وهيظهر طلبك هنا',
                     )
                   : RefreshIndicator(
-                      onRefresh: () =>
-                          orders.loadMine(auth.user!.id),
+                      onRefresh: () => orders.loadMine(auth.user!.id),
                       child: ListView.separated(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(16),
@@ -83,6 +82,46 @@ class _OrderCard extends StatelessWidget {
 
   final Order order;
 
+  bool get _canCancel =>
+      order.status == OrderStatus.pending ||
+      order.status == OrderStatus.confirmed;
+
+  Future<void> _cancel(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('إلغاء الطلب'),
+        content: Text('متأكد إنك عايز تلغي الطلب ${order.id}؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('تراجع'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'إلغاء الطلب',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final done =
+        await context.read<OrdersProvider>().cancelMyOrder(order.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          done ? 'تم إلغاء الطلب' : 'مش ممكن إلغاء الطلب بعد الشحن',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -91,8 +130,7 @@ class _OrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Theme(
-        data: Theme.of(context)
-            .copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 14),
           title: Row(
@@ -111,9 +149,9 @@ class _OrderCard extends StatelessWidget {
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              '${formatDate(order.createdAt)} · ${order.itemsCount} قطعة · ${formatPrice(order.total)}',
-              style:
-                  const TextStyle(fontSize: 12, color: AppTheme.grey),
+              '${formatDate(order.createdAt)} · ${order.itemsCount} قطعة · ${formatPrice(order.total)}'
+              '${order.isPaid ? " · مدفوع ✅" : ""}',
+              style: const TextStyle(fontSize: 12, color: AppTheme.grey),
             ),
           ),
           children: [
@@ -150,7 +188,34 @@ class _OrderCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ReceiptScreen(order: order),
+                        ),
+                      ),
+                      icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                      label: const Text('الإيصال'),
+                    ),
+                  ),
+                  if (_canCancel) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _cancel(context),
+                        icon: const Icon(Icons.close, size: 18),
+                        label: const Text('إلغاء'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -238,8 +303,7 @@ class _StatusTimeline extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: reached
-                    ? const Icon(Icons.check,
-                        size: 13, color: Colors.white)
+                    ? const Icon(Icons.check, size: 13, color: Colors.white)
                     : null,
               ),
               const SizedBox(height: 4),
@@ -247,8 +311,7 @@ class _StatusTimeline extends StatelessWidget {
                 _steps[stepIndex].labelAr,
                 style: TextStyle(
                   fontSize: 10,
-                  fontWeight:
-                      reached ? FontWeight.w800 : FontWeight.w400,
+                  fontWeight: reached ? FontWeight.w800 : FontWeight.w400,
                 ),
               ),
             ],

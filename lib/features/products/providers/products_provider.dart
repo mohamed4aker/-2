@@ -36,8 +36,14 @@ class ProductsProvider extends ChangeNotifier {
     return list.take(6).toList();
   }
 
-  List<Product> get lowStock =>
-      _products.where((p) => p.stock <= 3).toList();
+  List<Product> lowStockBelow(int threshold) =>
+      _products.where((p) => p.stock <= threshold).toList();
+
+  List<Product> get lowStock => lowStockBelow(3);
+
+  /// المنتجات اللي عليها خصم — لقسم "عروض وخصومات".
+  List<Product> get discounted =>
+      _products.where((p) => p.hasDiscount).toList();
 
   double get maxPrice => _products.isEmpty
       ? 5000

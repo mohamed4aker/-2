@@ -9,6 +9,7 @@ import '../../../core/widgets/product_image.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../orders/screens/checkout_screen.dart';
+import '../../settings/providers/settings_provider.dart';
 import '../providers/cart_provider.dart';
 
 class CartScreen extends StatelessWidget {
@@ -17,12 +18,12 @@ class CartScreen extends StatelessWidget {
   Future<void> _goToCheckout(BuildContext context) async {
     final auth = context.read<AuthProvider>();
     if (!auth.isLoggedIn) {
-      final loggedIn = await Navigator.of(context).push<bool>(
+      final proceeded = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => const LoginScreen(popOnSuccess: true),
         ),
       );
-      if (loggedIn != true || !context.mounted) return;
+      if (proceeded != true || !context.mounted) return;
     }
     if (!context.mounted) return;
     Navigator.of(context).push(
@@ -33,14 +34,15 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final settings = context.watch<SettingsProvider>().settings;
 
     return Scaffold(
       appBar: AppBar(title: const Text('سلة التسوق')),
       body: cart.isEmpty
           ? const EmptyView(
               icon: Icons.shopping_bag_outlined,
-              title: 'السلة فارغة',
-              subtitle: 'تصفحي المنتجات وأضيفي ما يعجبك',
+              title: 'السلة فاضية',
+              subtitle: 'اتصفح المنتجات وضيف اللي يعجبك',
             )
           : Column(
               children: [
@@ -96,11 +98,30 @@ class CartScreen extends StatelessWidget {
                                   const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      Text(
-                                        formatPrice(item.total),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                        ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          if (item.product.hasDiscount)
+                                            Text(
+                                              formatPrice(
+                                                item.product.price *
+                                                    item.quantity,
+                                              ),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppTheme.grey,
+                                                decoration: TextDecoration
+                                                    .lineThrough,
+                                              ),
+                                            ),
+                                          Text(
+                                            formatPrice(item.total),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                       const Spacer(),
                                       _RoundIconButton(
@@ -156,17 +177,33 @@ class CartScreen extends StatelessWidget {
                           label: 'المجموع',
                           value: formatPrice(cart.subtotal),
                         ),
+                        if (cart.productsSaving > 0) ...[
+                          const SizedBox(height: 4),
+                          _SummaryRow(
+                            label: 'وفّرت',
+                            value:
+                                '- ${formatPrice(cart.productsSaving)}',
+                          ),
+                        ],
+                        if (cart.couponDiscount > 0) ...[
+                          const SizedBox(height: 4),
+                          _SummaryRow(
+                            label: 'خصم الكوبون',
+                            value:
+                                '- ${formatPrice(cart.couponDiscount)}',
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         _SummaryRow(
                           label: 'الشحن',
-                          value: cart.shipping == 0
+                          value: cart.shipping(settings) == 0
                               ? 'مجاني'
-                              : formatPrice(cart.shipping),
+                              : formatPrice(cart.shipping(settings)),
                         ),
                         const Divider(height: 20),
                         _SummaryRow(
                           label: 'الإجمالي',
-                          value: formatPrice(cart.total),
+                          value: formatPrice(cart.total(settings)),
                           bold: true,
                         ),
                         const SizedBox(height: 12),
@@ -230,8 +267,7 @@ class _SummaryRow extends StatelessWidget {
       children: [
         Text(label, style: style),
         const Spacer(),
-        Text(value,
-            style: style.copyWith(color: Colors.black)),
+        Text(value, style: style.copyWith(color: Colors.black)),
       ],
     );
   }

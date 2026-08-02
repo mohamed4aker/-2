@@ -7,6 +7,11 @@ abstract class OrderRepository {
   Future<List<Order>> fetchUserOrders(String userId);
   Future<Order> createOrder(Order order);
   Future<Order> updateStatus(String orderId, OrderStatus status);
+  Future<Order> updatePayment(
+    String orderId,
+    PaymentStatus status,
+    String? transactionId,
+  );
 }
 
 /// تنفيذ تجريبي في الذاكرة مع طلبات جاهزة لعرض لوحة تحكم الأدمن.
@@ -14,6 +19,9 @@ class MockOrderRepository implements OrderRepository {
   static final List<Order> store = _seedOrders();
 
   static const _delay = Duration(milliseconds: 350);
+
+  static String _img(String seed) =>
+      'https://picsum.photos/seed/$seed/800/800?grayscale';
 
   static List<Order> _seedOrders() {
     final now = DateTime.now();
@@ -26,12 +34,13 @@ class MockOrderRepository implements OrderRepository {
         address: '15 شارع التحرير، الدقي',
         city: 'الجيزة',
         paymentMethod: PaymentMethod.cashOnDelivery,
-        items: const [
+        items: [
           OrderItem(
             productId: 'p1',
             name: 'حذاء كعب كلاسيك أسود',
-            image: 'https://picsum.photos/seed/anaqa-heel-1/800/800?grayscale',
+            image: _img('anaqa-heel-1'),
             price: 950,
+            originalPrice: 1250,
             quantity: 1,
             size: '38',
             color: 'أسود',
@@ -39,13 +48,14 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p8',
             name: 'نظارة شمس كات آي',
-            image:
-                'https://picsum.photos/seed/anaqa-cateye-1/800/800?grayscale',
+            image: _img('anaqa-cateye-1'),
             price: 750,
             quantity: 1,
             color: 'أسود',
           ),
         ],
+        subtotal: 1700,
+        shipping: 0,
         total: 1700,
         status: OrderStatus.pending,
         createdAt: now.subtract(const Duration(hours: 2)),
@@ -57,19 +67,33 @@ class MockOrderRepository implements OrderRepository {
         phone: '01233334444',
         address: '8 شارع فؤاد، محطة الرمل',
         city: 'الإسكندرية',
-        paymentMethod: PaymentMethod.cashOnDelivery,
-        items: const [
+        paymentMethod: PaymentMethod.card,
+        items: [
           OrderItem(
             productId: 'p5',
             name: 'شنطة يد جلد فاخرة',
-            image: 'https://picsum.photos/seed/anaqa-bag-1/800/800?grayscale',
+            image: _img('anaqa-bag-1'),
             price: 1480,
+            originalPrice: 1850,
             quantity: 1,
             color: 'بيج',
           ),
+          OrderItem(
+            productId: 'p2',
+            name: 'سنيكرز جلد أبيض',
+            image: _img('anaqa-sneaker-1'),
+            price: 1450,
+            quantity: 1,
+            size: '38',
+            color: 'أبيض',
+          ),
         ],
-        total: 1480,
+        subtotal: 2930,
+        shipping: 0,
+        total: 2930,
         status: OrderStatus.confirmed,
+        paymentStatus: PaymentStatus.paid,
+        transactionId: 'TRX-DEMO-1002',
         createdAt: now.subtract(const Duration(hours: 6)),
       ),
       Order(
@@ -80,17 +104,31 @@ class MockOrderRepository implements OrderRepository {
         address: '22 شارع الجمهورية',
         city: 'المنصورة',
         paymentMethod: PaymentMethod.cashOnDelivery,
-        items: const [
+        items: [
           OrderItem(
             productId: 'p11',
             name: 'طقم إكسسوارات ذهبي',
-            image: 'https://picsum.photos/seed/anaqa-set-1/800/800?grayscale',
+            image: _img('anaqa-set-1'),
             price: 760,
+            originalPrice: 950,
             quantity: 2,
             color: 'ذهبي',
           ),
+          OrderItem(
+            productId: 'p5',
+            name: 'شنطة يد جلد فاخرة',
+            image: _img('anaqa-bag-1'),
+            price: 1480,
+            originalPrice: 1850,
+            quantity: 1,
+            color: 'أسود',
+          ),
         ],
-        total: 1520,
+        subtotal: 3000,
+        shipping: 0,
+        discount: 300,
+        couponCode: 'ANAQA10',
+        total: 2700,
         status: OrderStatus.shipped,
         createdAt: now.subtract(const Duration(days: 1)),
       ),
@@ -102,21 +140,67 @@ class MockOrderRepository implements OrderRepository {
         address: '5 شارع 9، المعادي',
         city: 'القاهرة',
         paymentMethod: PaymentMethod.cashOnDelivery,
-        items: const [
+        items: [
           OrderItem(
             productId: 'p2',
             name: 'سنيكرز جلد أبيض',
-            image:
-                'https://picsum.photos/seed/anaqa-sneaker-1/800/800?grayscale',
+            image: _img('anaqa-sneaker-1'),
             price: 1450,
             quantity: 1,
             size: '37',
             color: 'أبيض',
           ),
+          OrderItem(
+            productId: 'p6',
+            name: 'شنطة كروس صغيرة',
+            image: _img('anaqa-cross-1'),
+            price: 890,
+            quantity: 1,
+            color: 'أسود',
+          ),
         ],
-        total: 1450,
+        subtotal: 2340,
+        shipping: 0,
+        total: 2340,
         status: OrderStatus.delivered,
         createdAt: now.subtract(const Duration(days: 3)),
+      ),
+      Order(
+        id: 'ORD-1005',
+        userId: 'demo_user_5',
+        customerName: 'نورهان سمير',
+        phone: '01277778888',
+        address: '30 شارع الهرم',
+        city: 'الجيزة',
+        paymentMethod: PaymentMethod.card,
+        items: [
+          OrderItem(
+            productId: 'p9',
+            name: 'نظارة شمس أفياتور',
+            image: _img('anaqa-aviator-1'),
+            price: 650,
+            originalPrice: 820,
+            quantity: 1,
+            color: 'ذهبي',
+          ),
+          OrderItem(
+            productId: 'p14',
+            name: 'حلق دائري كبير',
+            image: _img('anaqa-hoops-1'),
+            price: 220,
+            originalPrice: 280,
+            quantity: 2,
+            color: 'ذهبي',
+          ),
+        ],
+        subtotal: 1090,
+        shipping: 60,
+        total: 1150,
+        status: OrderStatus.delivered,
+        paymentStatus: PaymentStatus.paid,
+        transactionId: 'TRX-DEMO-1005',
+        isGuestOrder: true,
+        createdAt: now.subtract(const Duration(days: 5)),
       ),
     ];
   }
@@ -156,6 +240,24 @@ class MockOrderRepository implements OrderRepository {
       throw Exception('الطلب غير موجود');
     }
     store[index] = store[index].copyWith(status: status);
+    return store[index];
+  }
+
+  @override
+  Future<Order> updatePayment(
+    String orderId,
+    PaymentStatus status,
+    String? transactionId,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    final index = store.indexWhere((o) => o.id == orderId);
+    if (index == -1) {
+      throw Exception('الطلب غير موجود');
+    }
+    store[index] = store[index].copyWith(
+      paymentStatus: status,
+      transactionId: transactionId,
+    );
     return store[index];
   }
 }

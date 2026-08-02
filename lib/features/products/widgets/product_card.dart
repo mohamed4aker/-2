@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/product_image.dart';
+import '../../favorites/providers/favorites_provider.dart';
 import '../data/models/product.dart';
 import '../screens/product_details_screen.dart';
 
@@ -71,6 +73,32 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                // زر المفضلة
+                PositionedDirectional(
+                  top: 4,
+                  start: 4,
+                  child: Consumer<FavoritesProvider>(
+                    builder: (context, favorites, _) {
+                      final isFav = favorites.isFavorite(product.id);
+                      return InkWell(
+                        onTap: () => favorites.toggle(product.id),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            size: 17,
+                            color: Colors.black,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
             Padding(

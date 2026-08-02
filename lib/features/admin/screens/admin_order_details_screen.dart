@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/product_image.dart';
+import '../../notifications/data/models/app_notification.dart';
+import '../../notifications/providers/notifications_provider.dart';
 import '../../orders/data/models/order.dart';
 import '../../orders/providers/orders_provider.dart';
 import '../../orders/screens/my_orders_screen.dart' show OrderStatusChip;
+import '../../orders/screens/receipt_screen.dart';
 
-/// تفاصيل الطلب للأدمن: بيانات العميل + المنتجات + تغيير الحالة.
+/// تفاصيل الطلب للأدمن: بيانات العميل + المنتجات + تغيير الحالة + الإيصال.
 class AdminOrderDetailsScreen extends StatelessWidget {
   const AdminOrderDetailsScreen({super.key, required this.orderId});
 
@@ -20,23 +25,26 @@ class AdminOrderDetailsScreen extends StatelessWidget {
     OrderStatus status,
   ) async {
     await context.read<OrdersProvider>().updateStatus(order.id, status);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تم تغيير الحالة إلى "${status.labelAr}"')),
-      );
-    }
+    if (!context.mounted) return;
+
+    // إشعار للعميل بتغيّر حالة الطلب.
+    await context.read<NotificationsProvider>().push(
+          title: 'تحديث على طلبك',
+          body: 'الطلب ${order.id} أصبح "${status.labelAr}"',
+          type: NotificationType.orderStatus,
+          orderId: order.id,
+        );
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('تم تغيير الحالة إلى "${status.labelAr}"')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<OrdersProvider>();
-    Order? order;
-    for (final o in provider.allOrders) {
-      if (o.id == orderId) {
-        order = o;
-        break;
-      }
-    }
+    final order = provider.orderById(orderId);
 
     if (order == null) {
       return Scaffold(
@@ -47,7 +55,23 @@ class AdminOrderDetailsScreen extends StatelessWidget {
     final currentOrder = order;
 
     return Scaffold(
-      appBar: AppBar(title: Text('طلب ${currentOrder.id}')),
+      appBar: AppBar(
+        title: Text('طلب ${currentOrder.id}'),
+        actions: [
+          IconButton(
+            tooltip: 'إيصال المتجر',
+            icon: const Icon(Icons.receipt_long_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ReceiptScreen(
+                  order: currentOrder,
+                  copy: ReceiptCopy.merchant,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -55,8 +79,7 @@ class AdminOrderDetailsScreen extends StatelessWidget {
             children: [
               const Text(
                 'حالة الطلب',
-                style:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
               const Spacer(),
               OrderStatusChip(status: currentOrder.status),
@@ -73,12 +96,12 @@ class AdminOrderDetailsScreen extends StatelessWidget {
                     selected: currentOrder.status == status,
                     onSelected: currentOrder.status == status
                         ? null
-                        : (_) =>
-                            _changeStatus(context, currentOrder, status),
+                        : (_) => _changeStatus(context, currentOrder, status),
                   ),
                 )
                 .toList(),
           ),
+
           const Divider(height: 32),
           const Text(
             'بيانات العميل',
@@ -102,11 +125,13 @@ class AdminOrderDetailsScreen extends StatelessWidget {
                   icon: Icons.phone_outlined,
                   label: 'الهاتف',
                   value: currentOrder.phone,
+                  copyable: true,
                 ),
                 _InfoRow(
                   icon: Icons.location_on_outlined,
                   label: 'العنوان',
                   value: currentOrder.address,
+                  copyable: true,
                 ),
                 _InfoRow(
                   icon: Icons.location_city_outlined,
@@ -119,13 +144,37 @@ class AdminOrderDetailsScreen extends StatelessWidget {
                   value: currentOrder.paymentMethod.labelAr,
                 ),
                 _InfoRow(
+                  icon: Icons.verified_outlined,
+                  label: 'حالة الدفع',
+                  value: currentOrder.paymentStatus.labelAr,
+                ),
+                if (currentOrder.transactionId != null)
+                  _InfoRow(
+                    icon: Icons.confirmation_number_outlined,
+                    label: 'رقم العملية',
+                    value: currentOrder.transactionId!,
+                  ),
+                _InfoRow(
                   icon: Icons.access_time,
                   label: 'التاريخ',
                   value: formatDate(currentOrder.createdAt),
                 ),
+                if (currentOrder.notes != null)
+                  _InfoRow(
+                    icon: Icons.notes_outlined,
+                    label: 'ملاحظات',
+                    value: currentOrder.notes!,
+                  ),
+                if (currentOrder.isGuestOrder)
+                  const _InfoRow(
+                    icon: Icons.info_outline,
+                    label: 'نوع الطلب',
+                    value: 'طلب ضيف (بدون حساب)',
+                  ),
               ],
             ),
           ),
+
           const SizedBox(height: 20),
           const Text(
             'المنتجات',
@@ -169,6 +218,34 @@ class AdminOrderDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
+
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppTheme.border),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                _MoneyRow(
+                  label: 'المجموع',
+                  value: formatPrice(currentOrder.subtotal),
+                ),
+                if (currentOrder.discount > 0)
+                  _MoneyRow(
+                    label: 'خصم (${currentOrder.couponCode ?? ""})',
+                    value: '- ${formatPrice(currentOrder.discount)}',
+                  ),
+                _MoneyRow(
+                  label: 'الشحن',
+                  value: currentOrder.shipping == 0
+                      ? 'مجاني'
+                      : formatPrice(currentOrder.shipping),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(16),
@@ -198,7 +275,59 @@ class AdminOrderDetailsScreen extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 20),
+          AppButton(
+            label: 'عرض إيصال المتجر',
+            icon: Icons.receipt_long_outlined,
+            outlined: true,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ReceiptScreen(
+                  order: currentOrder,
+                  copy: ReceiptCopy.merchant,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          AppButton(
+            label: 'عرض نسخة العميل',
+            icon: Icons.person_outline,
+            outlined: true,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ReceiptScreen(order: currentOrder),
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoneyRow extends StatelessWidget {
+  const _MoneyRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13)),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -210,11 +339,13 @@ class _InfoRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.copyable = false,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  final bool copyable;
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +370,20 @@ class _InfoRow extends StatelessWidget {
               ),
             ),
           ),
+          if (copyable)
+            InkWell(
+              onTap: () async {
+                await Clipboard.setData(ClipboardData(text: value));
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('تم نسخ $label')),
+                );
+              },
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.copy, size: 15),
+              ),
+            ),
         ],
       ),
     );

@@ -7,8 +7,12 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/screens/splash_screen.dart';
 import 'features/cart/providers/cart_provider.dart';
+import 'features/favorites/providers/favorites_provider.dart';
+import 'features/notifications/providers/notifications_provider.dart';
 import 'features/orders/providers/orders_provider.dart';
 import 'features/products/providers/products_provider.dart';
+import 'features/products/providers/reviews_provider.dart';
+import 'features/settings/providers/settings_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +31,10 @@ class AnaqaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProductsProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()..loadCart()),
         ChangeNotifierProvider(create: (_) => OrdersProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+        ChangeNotifierProvider(create: (_) => FavoritesProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewsProvider()),
       ],
       child: MaterialApp(
         title: 'أناقة',

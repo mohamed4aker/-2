@@ -4,11 +4,16 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../admin/screens/admin_shell.dart';
+import '../../favorites/providers/favorites_provider.dart';
+import '../../notifications/providers/notifications_provider.dart';
+import '../../notifications/screens/notifications_screen.dart';
+import '../../orders/screens/my_orders_screen.dart';
+import '../../settings/providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
-/// شاشة الحساب: تسجيل دخول/خروج + دخول لوحة الأدمن.
+/// شاشة الحساب: الطلبات، الإشعارات، المفضلة، وتسجيل الدخول/الخروج.
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
@@ -18,9 +23,7 @@ class AccountScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('حسابي')),
-      body: auth.isLoggedIn
-          ? _LoggedInView(auth: auth)
-          : const _GuestView(),
+      body: auth.isLoggedIn ? _LoggedInView(auth: auth) : const _GuestView(),
     );
   }
 }
@@ -31,7 +34,7 @@ class _GuestView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -40,7 +43,7 @@ class _GuestView extends StatelessWidget {
             const Icon(Icons.person_outline, size: 72, color: AppTheme.grey),
             const SizedBox(height: 16),
             const Text(
-              'سجلي الدخول لمتابعة طلباتك وإتمام الشراء',
+              'سجّل دخولك لمتابعة طلباتك وإتمام الشراء',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
             ),
@@ -74,6 +77,10 @@ class _LoggedInView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = auth.user!;
+    final settings = context.watch<SettingsProvider>().settings;
+    final unread = context.watch<NotificationsProvider>().unreadCount;
+    final favCount = context.watch<FavoritesProvider>().count;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -85,10 +92,14 @@ class _LoggedInView extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 28,
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Colors.black, size: 32),
+                child: Icon(
+                  user.isGuest ? Icons.person_outline : Icons.person,
+                  color: Colors.black,
+                  size: 32,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -105,7 +116,9 @@ class _LoggedInView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      user.email ?? user.phone,
+                      user.isGuest
+                          ? 'حساب ضيف — الطلبات مش هتتحفظ'
+                          : (user.email ?? user.phone),
                       style: const TextStyle(color: Colors.white70),
                     ),
                   ],
@@ -114,26 +127,65 @@ class _LoggedInView extends StatelessWidget {
             ],
           ),
         ),
+
+        if (user.isGuest) ...[
+          const SizedBox(height: 16),
+          AppButton(
+            label: 'اعمل حساب واحتفظ بطلباتك',
+            outlined: true,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RegisterScreen()),
+            ),
+          ),
+        ],
+
         const SizedBox(height: 16),
         if (auth.isAdmin)
-          ListTile(
-            leading: const Icon(Icons.dashboard_outlined),
-            title: const Text('لوحة تحكم المتجر'),
-            trailing: const Icon(Icons.arrow_back_ios_new, size: 16),
+          _Tile(
+            icon: Icons.dashboard_outlined,
+            title: 'لوحة تحكم المتجر',
             onTap: () => Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (_) => const AdminShell()),
               (route) => false,
             ),
           ),
-        const ListTile(
-          leading: Icon(Icons.local_shipping_outlined),
-          title: Text('الشحن لجميع محافظات مصر'),
-          subtitle: Text('شحن مجاني للطلبات فوق 2000 ج.م'),
+        _Tile(
+          icon: Icons.receipt_long_outlined,
+          title: 'طلباتي',
+          subtitle: 'تابع حالة طلباتك واطبع الإيصالات',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
+          ),
         ),
-        const ListTile(
-          leading: Icon(Icons.support_agent_outlined),
-          title: Text('خدمة العملاء'),
-          subtitle: Text('من 10 صباحاً حتى 10 مساءً'),
+        _Tile(
+          icon: Icons.notifications_outlined,
+          title: 'الإشعارات',
+          subtitle: unread > 0 ? '$unread إشعار جديد' : 'مفيش جديد',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          ),
+        ),
+        _Tile(
+          icon: Icons.favorite_border,
+          title: 'المفضلة',
+          subtitle: '$favCount منتج',
+        ),
+        const Divider(height: 32),
+        _Tile(
+          icon: Icons.local_shipping_outlined,
+          title: 'الشحن لجميع محافظات مصر',
+          subtitle:
+              'شحن مجاني للطلبات فوق ${settings.freeShippingOver.toStringAsFixed(0)} ج.م',
+        ),
+        _Tile(
+          icon: Icons.support_agent_outlined,
+          title: 'خدمة العملاء',
+          subtitle: settings.storePhone,
+        ),
+        _Tile(
+          icon: Icons.storefront_outlined,
+          title: settings.storeName,
+          subtitle: settings.storeAddress,
         ),
         const Divider(height: 32),
         ListTile(
@@ -144,6 +196,38 @@ class _LoggedInView extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle!, style: const TextStyle(fontSize: 12)),
+      trailing: onTap == null
+          ? null
+          : const Icon(Icons.arrow_back_ios_new, size: 14),
+      onTap: onTap,
     );
   }
 }

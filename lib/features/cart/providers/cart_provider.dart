@@ -3,26 +3,48 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/storage/local_storage.dart';
+import '../../orders/data/models/coupon.dart';
 import '../../products/data/models/product.dart';
+import '../../settings/data/models/store_settings.dart';
 import '../data/models/cart_item.dart';
 
 class CartProvider extends ChangeNotifier {
   final Map<String, CartItem> _items = {};
+  Coupon? _coupon;
 
   List<CartItem> get items => _items.values.toList();
+
+  Coupon? get coupon => _coupon;
 
   int get itemsCount =>
       _items.values.fold(0, (sum, item) => sum + item.quantity);
 
   bool get isEmpty => _items.isEmpty;
 
+  /// إجمالي المنتجات بعد خصومات المنتجات نفسها.
   double get subtotal =>
       _items.values.fold(0, (sum, item) => sum + item.total);
 
-  /// الشحن: مجاني فوق 2000 ج.م وإلا 60 ج.م.
-  double get shipping => isEmpty || subtotal >= 2000 ? 0 : 60;
+  /// إجمالي السعر قبل أي خصم على المنتجات.
+  double get subtotalBeforeDiscount => _items.values
+      .fold(0, (sum, item) => sum + (item.product.price * item.quantity));
 
-  double get total => subtotal + shipping;
+  /// قيمة ما وفّره العميل من خصومات المنتجات.
+  double get productsSaving => subtotalBeforeDiscount - subtotal;
+
+  /// قيمة خصم الكوبون.
+  double get couponDiscount => _coupon?.discountFor(subtotal) ?? 0;
+
+  double shipping(StoreSettings settings) {
+    if (isEmpty) return 0;
+    final afterDiscount = subtotal - couponDiscount;
+    return afterDiscount >= settings.freeShippingOver
+        ? 0
+        : settings.shippingFee;
+  }
+
+  double total(StoreSettings settings) =>
+      subtotal - couponDiscount + shipping(settings);
 
   /// تحميل السلة المحفوظة من التخزين المحلي.
   Future<void> loadCart() async {
@@ -82,8 +104,26 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// يحاول تطبيق كود خصم. يرجّع رسالة الخطأ أو null لو نجح.
+  String? applyCoupon(String code) {
+    final found = CouponStore.find(code);
+    if (found == null) return 'كود الخصم غير صحيح أو منتهي';
+    if (subtotal < found.minOrder) {
+      return 'الكود ده للطلبات فوق ${found.minOrder.toStringAsFixed(0)} ج.م';
+    }
+    _coupon = found;
+    notifyListeners();
+    return null;
+  }
+
+  void removeCoupon() {
+    _coupon = null;
+    notifyListeners();
+  }
+
   void clear() {
     _items.clear();
+    _coupon = null;
     _persist();
     notifyListeners();
   }

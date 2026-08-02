@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../admin/screens/admin_shell.dart';
 import '../../products/screens/customer_shell.dart';
+import '../../settings/providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import 'register_screen.dart';
 
@@ -30,22 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    final auth = context.read<AuthProvider>();
-    final success = await auth.login(
-      _identifierController.text,
-      _passwordController.text,
-    );
-    if (!mounted) return;
-
-    if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error ?? 'حدث خطأ، حاول مرة أخرى')),
-      );
-      return;
-    }
-
+  void _onSuccess(AuthProvider auth) {
     if (auth.isAdmin) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const AdminShell()),
@@ -61,9 +48,41 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showError(AuthProvider auth) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(auth.error ?? 'حدث خطأ، حاول مرة أخرى')),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    final auth = context.read<AuthProvider>();
+    final success = await auth.login(
+      _identifierController.text,
+      _passwordController.text,
+    );
+    if (!mounted) return;
+    success ? _onSuccess(auth) : _showError(auth);
+  }
+
+  Future<void> _google() async {
+    final auth = context.read<AuthProvider>();
+    final success = await auth.loginWithGoogle();
+    if (!mounted) return;
+    success ? _onSuccess(auth) : _showError(auth);
+  }
+
+  Future<void> _guest() async {
+    final auth = context.read<AuthProvider>();
+    final success = await auth.continueAsGuest();
+    if (!mounted) return;
+    success ? _onSuccess(auth) : _showError(auth);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final loading = context.watch<AuthProvider>().loading;
+    final auth = context.watch<AuthProvider>();
+    final settings = context.watch<SettingsProvider>().settings;
 
     return Scaffold(
       appBar: AppBar(title: const Text('تسجيل الدخول')),
@@ -76,9 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 28, vertical: 10),
+                  Align(
                     alignment: Alignment.center,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -86,9 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.black, width: 2),
                       ),
-                      child: const Text(
-                        'أناقة',
-                        style: TextStyle(
+                      child: Text(
+                        settings.storeName,
+                        style: const TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 2,
@@ -96,20 +113,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   const Text(
-                    'أهلاً بيكِ من جديد',
+                    'أهلاً بيك من جديد',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, color: Colors.black54),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
                   AppTextField(
                     label: 'رقم الهاتف أو البريد الإلكتروني',
                     controller: _identifierController,
                     icon: Icons.person_outline,
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'أدخلي رقم الهاتف أو البريد الإلكتروني'
+                        ? 'أدخل رقم الهاتف أو البريد الإلكتروني'
                         : null,
                   ),
                   const SizedBox(height: 16),
@@ -125,14 +142,51 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
                   AppButton(
                     label: 'تسجيل الدخول',
-                    loading: loading,
+                    loading: auth.loading,
                     onPressed: _submit,
                   ),
-                  const SizedBox(height: 12),
+
+                  if (settings.googleSignInEnabled) ...[
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'أو',
+                            style: TextStyle(
+                              color: AppTheme.grey,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    OutlinedButton.icon(
+                      onPressed: auth.loading ? null : _google,
+                      icon: const _GoogleMark(),
+                      label: const Text('المتابعة بحساب جوجل'),
+                    ),
+                  ],
+
+                  if (settings.guestCheckoutEnabled) ...[
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: auth.loading ? null : _guest,
+                      icon: const Icon(Icons.arrow_back, size: 18),
+                      label: const Text('المتابعة كضيف (من غير تسجيل)'),
+                    ),
+                  ],
+
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('ليس لديكِ حساب؟'),
+                      const Text('ليس لديك حساب؟'),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
@@ -151,6 +205,32 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// شعار جوجل مبسّط بالأبيض والأسود (عشان يفضل الثيم موحّد).
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 1.6),
+        shape: BoxShape.circle,
+      ),
+      child: const Text(
+        'G',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+          height: 1,
         ),
       ),
     );

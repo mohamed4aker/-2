@@ -5,10 +5,20 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/product_image.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../cart/providers/cart_provider.dart';
+import '../../favorites/providers/favorites_provider.dart';
+import '../../orders/providers/orders_provider.dart';
+import '../../settings/providers/settings_provider.dart';
+import '../data/models/product.dart';
+import '../data/recommendation_engine.dart';
 import '../providers/products_provider.dart';
+import '../providers/reviews_provider.dart';
+import '../widgets/product_card.dart';
+import '../widgets/review_section.dart';
 
-/// تفاصيل المنتج: معرض صور + مقاسات + ألوان + إضافة للسلة.
+/// تفاصيل المنتج: معرض صور + الأسعار قبل وبعد الخصم + مقاسات + ألوان
+/// + منتجات مقترحة تكمّل الإطلالة + تقييمات.
 class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({super.key, required this.productId});
 
@@ -38,13 +48,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
     if (product.sizes.isNotEmpty && _selectedSize == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('اختاري المقاس أولاً')),
+        const SnackBar(content: Text('اختر المقاس أولاً')),
       );
       return;
     }
     if (product.colors.isNotEmpty && _selectedColor == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('اختاري اللون أولاً')),
+        const SnackBar(content: Text('اختر اللون أولاً')),
       );
       return;
     }
@@ -64,6 +74,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<ProductsProvider>();
     final product = provider.productById(widget.productId);
+    final favorites = context.watch<FavoritesProvider>();
+    final settings = context.watch<SettingsProvider>().settings;
+    final reviews = context.watch<ReviewsProvider>();
 
     if (product == null) {
       return Scaffold(
@@ -72,15 +85,41 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       );
     }
 
+    // المنتجات المقترحة (كمّل إطلالتك)
+    final List<Product> suggestions = settings.recommendationsEnabled
+        ? RecommendationEngine.suggestFor(
+            product,
+            allProducts: provider.products,
+            orders: context.watch<OrdersProvider>().allOrders,
+            auto: settings.recommendationsAuto,
+          )
+        : const [];
+
+    final rating = reviews.averageFor(product.id);
+    final reviewsCount = reviews.countFor(product.id);
+
     return Scaffold(
-      appBar: AppBar(title: Text(product.name, maxLines: 1)),
+      appBar: AppBar(
+        title: Text(product.name, maxLines: 1),
+        actions: [
+          IconButton(
+            tooltip: 'المفضلة',
+            icon: Icon(
+              favorites.isFavorite(product.id)
+                  ? Icons.favorite
+                  : Icons.favorite_border,
+            ),
+            onPressed: () => favorites.toggle(product.id),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                // معرض الصور
+                // ---------- معرض الصور ----------
                 SizedBox(
                   height: 340,
                   child: Stack(
@@ -97,6 +136,24 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               : product.images[index],
                         ),
                       ),
+                      if (product.hasDiscount)
+                        PositionedDirectional(
+                          top: 12,
+                          start: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            color: Colors.black,
+                            child: Text(
+                              'وفّر ${product.discountPercent}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
                       if (product.images.length > 1)
                         Positioned(
                           bottom: 12,
@@ -117,8 +174,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                   color:
                                       active ? Colors.black : Colors.black26,
                                   borderRadius: BorderRadius.circular(4),
-                                  border:
-                                      Border.all(color: Colors.white),
+                                  border: Border.all(color: Colors.white),
                                 ),
                               );
                             }),
@@ -127,6 +183,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ],
                   ),
                 ),
+
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -158,52 +215,124 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            formatPrice(product.finalPrice),
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          if (product.hasDiscount) ...[
-                            const SizedBox(width: 12),
-                            Text(
-                              formatPrice(product.price),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: AppTheme.grey,
-                                decoration: TextDecoration.lineThrough,
+
+                      if (settings.reviewsEnabled && reviewsCount > 0) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            ...List.generate(
+                              5,
+                              (i) => Icon(
+                                i < rating.round()
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                size: 18,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              color: Colors.black,
-                              child: Text(
-                                'خصم ${product.discountPercent}%',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${rating.toStringAsFixed(1)} ($reviewsCount تقييم)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.grey,
                               ),
                             ),
                           ],
-                        ],
-                      ),
-                      const SizedBox(height: 8),
+                        ),
+                      ],
+
+                      const SizedBox(height: 12),
+
+                      // ---------- السعر قبل وبعد الخصم ----------
+                      if (product.hasDiscount)
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            border:
+                                Border.all(color: Colors.black, width: 1.5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    'السعر قبل الخصم',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppTheme.grey,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    formatPrice(product.price),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      color: AppTheme.grey,
+                                      decoration:
+                                          TextDecoration.lineThrough,
+                                      decorationThickness: 2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  const Text(
+                                    'السعر بعد الخصم',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    formatPrice(product.finalPrice),
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 20),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8),
+                                color: Colors.black,
+                                child: Text(
+                                  'بتوفّر ${formatPrice(product.price - product.finalPrice)} '
+                                  '(${product.discountPercent}%)',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Text(
+                          formatPrice(product.finalPrice),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+
+                      const SizedBox(height: 12),
                       Text(
                         product.inStock
                             ? 'متوفر (${product.stock} قطعة)'
                             : 'نفدت الكمية',
                         style: TextStyle(
-                          color: product.inStock
-                              ? AppTheme.grey
-                              : Colors.black,
+                          color:
+                              product.inStock ? AppTheme.grey : Colors.black,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -212,6 +341,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         product.description,
                         style: const TextStyle(height: 1.8, fontSize: 14),
                       ),
+
                       if (product.sizes.isNotEmpty) ...[
                         const SizedBox(height: 20),
                         const Text(
@@ -230,8 +360,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                 (size) => ChoiceChip(
                                   label: Text(size),
                                   selected: _selectedSize == size,
-                                  onSelected: (_) => setState(
-                                      () => _selectedSize = size),
+                                  onSelected: (_) =>
+                                      setState(() => _selectedSize = size),
                                 ),
                               )
                               .toList(),
@@ -255,15 +385,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                 (color) => ChoiceChip(
                                   label: Text(color),
                                   selected: _selectedColor == color,
-                                  onSelected: (_) => setState(
-                                      () => _selectedColor = color),
+                                  onSelected: (_) =>
+                                      setState(() => _selectedColor = color),
                                 ),
                               )
                               .toList(),
                         ),
                       ],
+
                       const SizedBox(height: 20),
-                      // الكمية
                       Row(
                         children: [
                           const Text(
@@ -299,14 +429,70 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
+
+                // ---------- كمّل إطلالتك ----------
+                if (suggestions.isNotEmpty) ...[
+                  const Divider(height: 8, thickness: 8,
+                      color: AppTheme.lightGrey),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Row(
+                      children: [
+                        Container(width: 4, height: 20, color: Colors.black),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'كمّل إطلالتك',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'قطع تتماشى مع المنتج ده',
+                      style: TextStyle(fontSize: 12, color: AppTheme.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 250,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: suggestions.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) => ProductCard(
+                        product: suggestions[index],
+                        width: 170,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // ---------- التقييمات ----------
+                if (settings.reviewsEnabled) ...[
+                  const Divider(height: 8, thickness: 8,
+                      color: AppTheme.lightGrey),
+                  ReviewSection(
+                    productId: product.id,
+                    canWrite:
+                        context.watch<AuthProvider>().isLoggedIn,
+                  ),
+                ],
+                const SizedBox(height: 16),
               ],
             ),
           ),
-          // شريط الإضافة للسلة
+
+          // ---------- شريط الإضافة للسلة ----------
           SafeArea(
             top: false,
             child: Container(
