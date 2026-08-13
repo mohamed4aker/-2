@@ -1,4 +1,4 @@
-package com.anaqa.store
+package com.moda.store
 
 import io.flutter.embedding.android.FlutterActivity
 

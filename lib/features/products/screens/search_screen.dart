@@ -68,7 +68,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           // فلتر التصنيفات
           SizedBox(
-            height: 44,
+            height: 56,
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -137,7 +137,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: kProductGridAspectRatio,
                     ),
                     itemCount: results.length,
                     itemBuilder: (context, index) =>

@@ -17,11 +17,11 @@ import 'features/settings/providers/settings_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LocalStorage.init();
-  runApp(const AnaqaApp());
+  runApp(const ModaApp());
 }
 
-class AnaqaApp extends StatelessWidget {
-  const AnaqaApp({super.key});
+class ModaApp extends StatelessWidget {
+  const ModaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class AnaqaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ReviewsProvider()),
       ],
       child: MaterialApp(
-        title: 'أناقة',
+        title: 'Moda',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         locale: const Locale('ar'),

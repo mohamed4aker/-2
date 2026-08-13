@@ -1,3 +1,4 @@
+import 'payout_account.dart';
 import 'ticker_item.dart';
 
 /// إعدادات المتجر — كل الميزات اللي صاحب المتجر يقدر يفتحها أو يقفلها.
@@ -20,10 +21,11 @@ class StoreSettings {
     this.couponsEnabled = true,
     this.shippingFee = 60,
     this.freeShippingOver = 2000,
-    this.storeName = 'أناقة',
+    this.storeName = 'Moda',
     this.storePhone = '01000000000',
     this.storeAddress = 'القاهرة، مصر',
     this.lowStockThreshold = 3,
+    this.payout = const PayoutAccount(),
   });
 
   // ---------- الشريط المتحرك ----------
@@ -63,6 +65,9 @@ class StoreSettings {
   final String storeAddress;
   final int lowStockThreshold;
 
+  /// حساب استلام الأموال (بنك / محفظة / إنستاباي).
+  final PayoutAccount payout;
+
   List<TickerItem> get activeTickerItems =>
       tickerItems.where((t) => t.enabled).toList();
 
@@ -88,6 +93,7 @@ class StoreSettings {
     String? storePhone,
     String? storeAddress,
     int? lowStockThreshold,
+    PayoutAccount? payout,
   }) {
     return StoreSettings(
       tickerEnabled: tickerEnabled ?? this.tickerEnabled,
@@ -112,6 +118,7 @@ class StoreSettings {
       storePhone: storePhone ?? this.storePhone,
       storeAddress: storeAddress ?? this.storeAddress,
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+      payout: payout ?? this.payout,
     );
   }
 
@@ -137,10 +144,13 @@ class StoreSettings {
         shippingFee: (json['shippingFee'] as num?)?.toDouble() ?? 60,
         freeShippingOver:
             (json['freeShippingOver'] as num?)?.toDouble() ?? 2000,
-        storeName: json['storeName'] as String? ?? 'أناقة',
+        storeName: json['storeName'] as String? ?? 'Moda',
         storePhone: json['storePhone'] as String? ?? '01000000000',
         storeAddress: json['storeAddress'] as String? ?? 'القاهرة، مصر',
         lowStockThreshold: (json['lowStockThreshold'] as num?)?.toInt() ?? 3,
+        payout: json['payout'] == null
+            ? const PayoutAccount()
+            : PayoutAccount.fromJson(json['payout'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toJson() => {
@@ -165,6 +175,7 @@ class StoreSettings {
         'storePhone': storePhone,
         'storeAddress': storeAddress,
         'lowStockThreshold': lowStockThreshold,
+        'payout': payout.toJson(),
       };
 
   /// الإعدادات الافتراضية مع عناصر شريط جاهزة.

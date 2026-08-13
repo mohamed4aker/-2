@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('أ ن ا ق ة'),
+        title: const Text('M O D A'),
         actions: [
           IconButton(
             tooltip: 'الإشعارات',
@@ -121,7 +121,7 @@ class HomeScreen extends StatelessWidget {
                   // منتجات مميزة
                   const SectionTitle(title: 'منتجات مميزة'),
                   SizedBox(
-                    height: 250,
+                    height: kProductCardListHeight,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -138,7 +138,7 @@ class HomeScreen extends StatelessWidget {
                   if (provider.discounted.isNotEmpty) ...[
                     const SectionTitle(title: 'عروض وخصومات'),
                     SizedBox(
-                      height: 250,
+                      height: kProductCardListHeight,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -164,7 +164,7 @@ class HomeScreen extends StatelessWidget {
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: kProductGridAspectRatio,
                     ),
                     itemCount: provider.newArrivals.length,
                     itemBuilder: (context, index) =>

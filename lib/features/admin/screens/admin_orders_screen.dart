@@ -28,7 +28,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 56,
+          height: 64,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding:

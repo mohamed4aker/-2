@@ -1,9 +1,13 @@
+import 'dart:convert';
+
+import '../../../core/config/app_config.dart';
+import '../../../core/storage/local_storage.dart';
 import 'mock_data.dart';
 import 'models/product.dart';
 
 /// واجهة مستودع المنتجات.
 ///
-/// لاستبدال الـ Mock بالـ API الحقيقي: أنشئ class جديد
+/// لاستبدال التخزين المحلي بالـ API الحقيقي: أنشئ class جديد
 /// `ApiProductRepository implements ProductRepository`
 /// يستدعي endpoints موجودة في [ApiConfig]، ثم استخدمه في ProductsProvider.
 abstract class ProductRepository {
@@ -13,12 +17,44 @@ abstract class ProductRepository {
   Future<void> deleteProduct(String id);
 }
 
-/// تنفيذ تجريبي يعمل بالكامل في الذاكرة.
+/// تنفيذ محلي: المنتجات محفوظة على الجهاز وبتفضل موجودة بعد قفل التطبيق.
+///
+/// ⚠️ التخزين ده **على الجهاز الواحد بس**. المنتجات اللي بتضيفها من موبايلك
+/// مش هتظهر لعملاء تانيين على موبايلاتهم — عشان كده لازم باك اند حقيقي
+/// قبل الإطلاق الفعلي (اقرأ قسم "الربط بالباك اند" في README).
 class MockProductRepository implements ProductRepository {
-  /// مخزن مشترك بين كل نسخ الـ repository أثناء تشغيل التطبيق.
-  static final List<Product> store = List.of(MockData.products);
+  static List<Product>? _cache;
 
-  static const _delay = Duration(milliseconds: 350);
+  static const _delay = Duration(milliseconds: 250);
+
+  /// قراءة المنتجات من التخزين المحلي (أو البيانات التجريبية أول مرة).
+  static List<Product> get store {
+    if (_cache != null) return _cache!;
+
+    final raw = LocalStorage.getString(LocalStorage.keyProducts);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        _cache = (jsonDecode(raw) as List)
+            .map((e) => Product.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return _cache!;
+      } catch (_) {
+        // بيانات تالفة — نبدأ من جديد.
+      }
+    }
+
+    _cache = AppConfig.useDemoData ? List.of(MockData.products) : <Product>[];
+    _persist();
+    return _cache!;
+  }
+
+  static void _persist() {
+    if (_cache == null) return;
+    LocalStorage.setString(
+      LocalStorage.keyProducts,
+      jsonEncode(_cache!.map((p) => p.toJson()).toList()),
+    );
+  }
 
   @override
   Future<List<Product>> fetchProducts() async {
@@ -30,6 +66,7 @@ class MockProductRepository implements ProductRepository {
   Future<Product> addProduct(Product product) async {
     await Future.delayed(_delay);
     store.add(product);
+    _persist();
     return product;
   }
 
@@ -41,6 +78,7 @@ class MockProductRepository implements ProductRepository {
       throw Exception('المنتج غير موجود');
     }
     store[index] = product;
+    _persist();
     return product;
   }
 
@@ -48,14 +86,22 @@ class MockProductRepository implements ProductRepository {
   Future<void> deleteProduct(String id) async {
     await Future.delayed(_delay);
     store.removeWhere((p) => p.id == id);
+    _persist();
   }
 
-  /// خصم الكمية من المخزون بعد إنشاء طلب (يستخدمه mock الطلبات).
+  /// خصم الكمية من المخزون بعد إنشاء طلب.
   static void decreaseStock(String productId, int quantity) {
     final index = store.indexWhere((p) => p.id == productId);
     if (index == -1) return;
     final product = store[index];
     final newStock = product.stock - quantity;
     store[index] = product.copyWith(stock: newStock < 0 ? 0 : newStock);
+    _persist();
+  }
+
+  /// مسح كل المنتجات (يُستخدم من زر "تصفير البيانات" في لوحة التحكم).
+  static Future<void> clearAll() async {
+    _cache = <Product>[];
+    await LocalStorage.setString(LocalStorage.keyProducts, '[]');
   }
 }

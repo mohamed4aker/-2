@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/storage/local_storage.dart';
 import '../data/models/review.dart';
 
@@ -10,6 +11,7 @@ class ReviewsProvider extends ChangeNotifier {
   List<Review> _reviews = _seed();
 
   static List<Review> _seed() {
+    if (!AppConfig.useDemoData) return [];
     final now = DateTime.now();
     return [
       Review(
@@ -66,6 +68,13 @@ class ReviewsProvider extends ChangeNotifier {
     } catch (_) {
       await LocalStorage.remove(LocalStorage.keyReviews);
     }
+  }
+
+  /// مسح كل التقييمات (من زر تصفير البيانات).
+  Future<void> clearAll() async {
+    _reviews = [];
+    await LocalStorage.setString(LocalStorage.keyReviews, '[]');
+    notifyListeners();
   }
 
   Future<void> add({

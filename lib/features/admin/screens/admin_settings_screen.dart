@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/config/app_config.dart';
+import '../../settings/data/models/payout_account.dart';
 import '../../settings/providers/settings_provider.dart';
 import 'admin_ticker_screen.dart';
+import 'data_management_screen.dart';
+import 'payout_settings_screen.dart';
 
 /// إعدادات المتجر — تفتح وتقفل أي ميزة من هنا.
 class AdminSettingsScreen extends StatelessWidget {
@@ -138,6 +142,35 @@ class AdminSettingsScreen extends StatelessWidget {
           onChanged: (v) =>
               provider.update(s.copyWith(cardPaymentEnabled: v)),
         ),
+        Container(
+          margin: const EdgeInsets.only(top: 8),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: s.payout.isConfigured ? AppTheme.border : Colors.black,
+              width: s.payout.isConfigured ? 1 : 1.5,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            leading: const Icon(Icons.account_balance_outlined),
+            title: const Text(
+              'حساب استلام الأموال',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+            ),
+            subtitle: Text(
+              s.payout.isConfigured
+                  ? '${s.payout.type.labelAr} · ${s.payout.summary}'
+                  : '⚠️ حدد الحساب اللي هتستلم عليه فلوس الطلبات',
+              style: const TextStyle(fontSize: 11),
+            ),
+            trailing: const Icon(Icons.arrow_back_ios_new, size: 14),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const PayoutSettingsScreen(),
+              ),
+            ),
+          ),
+        ),
 
         // ---------- ميزات إضافية ----------
         const _SectionHeader(
@@ -203,6 +236,43 @@ class AdminSettingsScreen extends StatelessWidget {
           label: 'عنوان المتجر',
           value: s.storeAddress,
           onSubmitted: (v) => provider.update(s.copyWith(storeAddress: v)),
+        ),
+
+        // ---------- إدارة البيانات ----------
+        const _SectionHeader(
+          title: 'إدارة البيانات',
+          subtitle: 'تصفير البيانات التجريبية قبل الإطلاق',
+          icon: Icons.storage_outlined,
+        ),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppTheme.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            leading: const Icon(Icons.cleaning_services_outlined),
+            title: const Text(
+              'مسح البيانات التجريبية',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+            ),
+            subtitle: const Text(
+              'امسح المنتجات والطلبات التجريبية وابدأ ببياناتك',
+              style: TextStyle(fontSize: 11),
+            ),
+            trailing: const Icon(Icons.arrow_back_ios_new, size: 14),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const DataManagementScreen(),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: Text(
+            'Moda v${AppConfig.appVersion}',
+            style: const TextStyle(fontSize: 11, color: AppTheme.grey),
+          ),
         ),
         const SizedBox(height: 32),
       ],

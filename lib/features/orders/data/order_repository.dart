@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import '../../../core/config/app_config.dart';
+import '../../../core/storage/local_storage.dart';
 import '../../products/data/product_repository.dart';
 import 'models/order.dart';
 
@@ -16,9 +20,44 @@ abstract class OrderRepository {
 
 /// تنفيذ تجريبي في الذاكرة مع طلبات جاهزة لعرض لوحة تحكم الأدمن.
 class MockOrderRepository implements OrderRepository {
-  static final List<Order> store = _seedOrders();
+  static List<Order>? _cache;
 
   static const _delay = Duration(milliseconds: 350);
+
+  /// الطلبات محفوظة على الجهاز وبتفضل بعد قفل التطبيق.
+  static List<Order> get store {
+    if (_cache != null) return _cache!;
+
+    final raw = LocalStorage.getString(LocalStorage.keyOrders);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        _cache = (jsonDecode(raw) as List)
+            .map((e) => Order.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return _cache!;
+      } catch (_) {
+        // بيانات تالفة — نبدأ من جديد.
+      }
+    }
+
+    _cache = AppConfig.useDemoData ? _seedOrders() : <Order>[];
+    _persist();
+    return _cache!;
+  }
+
+  static void _persist() {
+    if (_cache == null) return;
+    LocalStorage.setString(
+      LocalStorage.keyOrders,
+      jsonEncode(_cache!.map((o) => o.toJson()).toList()),
+    );
+  }
+
+  /// مسح كل الطلبات (من زر تصفير البيانات).
+  static Future<void> clearAll() async {
+    _cache = <Order>[];
+    await LocalStorage.setString(LocalStorage.keyOrders, '[]');
+  }
 
   static String _img(String seed) =>
       'https://picsum.photos/seed/$seed/800/800?grayscale';
@@ -38,7 +77,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p1',
             name: 'حذاء كعب كلاسيك أسود',
-            image: _img('anaqa-heel-1'),
+            image: _img('moda-heel-1'),
             price: 950,
             originalPrice: 1250,
             quantity: 1,
@@ -48,7 +87,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p8',
             name: 'نظارة شمس كات آي',
-            image: _img('anaqa-cateye-1'),
+            image: _img('moda-cateye-1'),
             price: 750,
             quantity: 1,
             color: 'أسود',
@@ -72,7 +111,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p5',
             name: 'شنطة يد جلد فاخرة',
-            image: _img('anaqa-bag-1'),
+            image: _img('moda-bag-1'),
             price: 1480,
             originalPrice: 1850,
             quantity: 1,
@@ -81,7 +120,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p2',
             name: 'سنيكرز جلد أبيض',
-            image: _img('anaqa-sneaker-1'),
+            image: _img('moda-sneaker-1'),
             price: 1450,
             quantity: 1,
             size: '38',
@@ -108,7 +147,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p11',
             name: 'طقم إكسسوارات ذهبي',
-            image: _img('anaqa-set-1'),
+            image: _img('moda-set-1'),
             price: 760,
             originalPrice: 950,
             quantity: 2,
@@ -117,7 +156,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p5',
             name: 'شنطة يد جلد فاخرة',
-            image: _img('anaqa-bag-1'),
+            image: _img('moda-bag-1'),
             price: 1480,
             originalPrice: 1850,
             quantity: 1,
@@ -144,7 +183,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p2',
             name: 'سنيكرز جلد أبيض',
-            image: _img('anaqa-sneaker-1'),
+            image: _img('moda-sneaker-1'),
             price: 1450,
             quantity: 1,
             size: '37',
@@ -153,7 +192,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p6',
             name: 'شنطة كروس صغيرة',
-            image: _img('anaqa-cross-1'),
+            image: _img('moda-cross-1'),
             price: 890,
             quantity: 1,
             color: 'أسود',
@@ -177,7 +216,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p9',
             name: 'نظارة شمس أفياتور',
-            image: _img('anaqa-aviator-1'),
+            image: _img('moda-aviator-1'),
             price: 650,
             originalPrice: 820,
             quantity: 1,
@@ -186,7 +225,7 @@ class MockOrderRepository implements OrderRepository {
           OrderItem(
             productId: 'p14',
             name: 'حلق دائري كبير',
-            image: _img('anaqa-hoops-1'),
+            image: _img('moda-hoops-1'),
             price: 220,
             originalPrice: 280,
             quantity: 2,
@@ -225,6 +264,7 @@ class MockOrderRepository implements OrderRepository {
   Future<Order> createOrder(Order order) async {
     await Future.delayed(_delay);
     store.add(order);
+    _persist();
     // خصم الكميات من المخزون (سلوك تجريبي فقط، الباك اند الحقيقي يتكفل بهذا).
     for (final item in order.items) {
       MockProductRepository.decreaseStock(item.productId, item.quantity);
@@ -240,6 +280,7 @@ class MockOrderRepository implements OrderRepository {
       throw Exception('الطلب غير موجود');
     }
     store[index] = store[index].copyWith(status: status);
+    _persist();
     return store[index];
   }
 
@@ -258,6 +299,7 @@ class MockOrderRepository implements OrderRepository {
       paymentStatus: status,
       transactionId: transactionId,
     );
+    _persist();
     return store[index];
   }
 }

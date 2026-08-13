@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,8 +8,20 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// إعدادات التوقيع للنشر على جوجل بلاي.
+// أنشئ ملف android/key.properties (مش بيترفع على git) وحط فيه:
+//   storePassword=...
+//   keyPassword=...
+//   keyAlias=upload
+//   storeFile=C:/Users/<اسمك>/upload-keystore.jks
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
-    namespace = "com.anaqa.store"
+    namespace = "com.moda.store"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,18 +35,35 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.anaqa.store"
+        applicationId = "com.moda.store"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String?
+                keyPassword = keystoreProperties["keyPassword"] as String?
+                storeFile = (keystoreProperties["storeFile"] as String?)?.let { file(it) }
+                storePassword = keystoreProperties["storePassword"] as String?
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: أضيفي إعدادات التوقيع الخاصة بك قبل النشر على المتجر.
-            // حالياً يستخدم توقيع debug حتى يعمل `flutter build apk --release`.
-            signingConfig = signingConfigs.getByName("debug")
+            // لو ملف key.properties موجود بيستخدم مفتاح النشر،
+            // وإلا بيستخدم توقيع debug عشان `flutter build apk` يفضل شغال.
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

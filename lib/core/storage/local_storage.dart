@@ -17,6 +17,9 @@ class LocalStorage {
   static const String keyLastOpened = 'last_opened_at';
   static const String keySeenProductIds = 'seen_product_ids';
   static const String keyReviews = 'product_reviews';
+  static const String keyProducts = 'products';
+  static const String keyCategories = 'categories';
+  static const String keyOrders = 'orders';
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();

@@ -245,6 +245,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 )
               else
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: TextFormField(
@@ -259,12 +260,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _applyCoupon,
-                        child: const Text('تطبيق'),
+                    ElevatedButton(
+                      onPressed: _applyCoupon,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(88, 56),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
+                      child: const Text('تطبيق'),
                     ),
                   ],
                 ),

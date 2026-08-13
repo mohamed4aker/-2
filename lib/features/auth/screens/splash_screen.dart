@@ -72,10 +72,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 border: Border.all(color: Colors.white, width: 2),
               ),
               child: const Text(
-                'أناقة',
+                'Moda',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 48,
+                  fontSize: 52,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 2,
                 ),

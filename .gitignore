@@ -50,3 +50,8 @@ app.*.map.json
 **/ios/Flutter/ephemeral/
 **/ios/Flutter/Generated.xcconfig
 **/ios/Flutter/flutter_export_environment.sh
+
+# Android signing (لا ترفع مفاتيح التوقيع على git أبداً)
+android/key.properties
+*.jks
+*.keystore

@@ -1,5 +1,5 @@
-name: anaqa_store
-description: "متجر أناقة - متجر أزياء نسائية (أحذية، شنط، نظارات شمسية، إكسسوارات)"
+name: moda_store
+description: "Moda - متجر أزياء نسائية (أحذية، شنط، نظارات شمسية، إكسسوارات)"
 publish_to: 'none'
 version: 1.0.0+1
 

@@ -60,7 +60,7 @@ class _TickerBarState extends State<TickerBar> {
     final hasImage = items.any((i) => i.type == TickerType.image);
 
     return Container(
-      height: hasImage ? 90 : 40,
+      height: hasImage ? 96 : 46,
       margin: const EdgeInsets.only(bottom: 12),
       color: Colors.black,
       child: PageView.builder(
@@ -76,15 +76,18 @@ class _TickerBarState extends State<TickerBar> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                item.value,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  item.value,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
