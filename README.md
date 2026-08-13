@@ -254,6 +254,131 @@ Flutter (أحدث نسخة مستقرة) · Null Safety · **Provider** · share
 
 ---
 
+# ☁️ ربط التطبيق بالسيرفر (Firebase) — خطوة بخطوة
+
+بعد الخطوات دي: **أي منتج تضيفه من موبايلك هيظهر فوراً لكل العملاء، وأي طلب يعمله عميل هيوصلك في لوحة التحكم.**
+
+المدة المتوقعة: **من ١٥ لـ ٢٥ دقيقة**. مجاني تماماً في البداية.
+
+---
+
+## 1️⃣ اعمل مشروع Firebase
+
+1. ادخل: **https://console.firebase.google.com**
+2. **Add project** ← اكتب الاسم `Moda` ← **Continue**
+3. شاشة Google Analytics → **اقفلها (Disable)** مش محتاجها دلوقتي ← **Create project**
+4. استنى دقيقة لحد ما يخلص ← **Continue**
+
+## 2️⃣ ضيف تطبيق أندرويد
+
+1. من الشاشة الرئيسية اضغط أيقونة **أندرويد** 🤖
+2. في خانة **Android package name** اكتب بالظبط:
+   ```
+   com.moda.store
+   ```
+   ⚠️ لازم يكون مطابق حرف بحرف، وإلا مش هيشتغل
+3. **Register app**
+4. **حمّل ملف `google-services.json`**
+5. حط الملف في المسار ده بالظبط:
+   ```
+   android/app/google-services.json
+   ```
+6. اضغط **Next → Next → Continue to console** (تجاهل خطوات الكود، أنا عاملها)
+
+## 3️⃣ فعّل قاعدة البيانات
+
+1. من القائمة الشمال: **Build ← Firestore Database**
+2. **Create database**
+3. اختار **Start in production mode** ← **Next**
+4. اختار الموقع **eur3 (europe-west)** — الأقرب لمصر ← **Enable**
+
+## 4️⃣ فعّل تسجيل الدخول
+
+1. **Build ← Authentication ← Get started**
+2. اختار **Email/Password** ← فعّله (**Enable**) ← **Save**
+3. ارجع واختار **Anonymous** ← فعّله ← **Save**
+   (ده اللي بيخلي "الطلب كضيف" يشتغل)
+
+## 5️⃣ فعّل تخزين الصور
+
+1. **Build ← Storage ← Get started**
+2. **Start in production mode** ← **Next** ← **Done**
+
+## 6️⃣ اضبط قواعد الأمان (مهم جداً)
+
+من غير الخطوة دي أي حد هيقدر يعدّل منتجاتك.
+
+**لقاعدة البيانات:**
+- **Firestore Database ← تبويب Rules**
+- امسح اللي موجود والصق محتوى ملف **`firebase/firestore.rules`** من المشروع
+- **Publish**
+
+**للصور:**
+- **Storage ← تبويب Rules**
+- الصق محتوى **`firebase/storage.rules`**
+- **Publish**
+
+## 7️⃣ اعمل حساب صاحب المتجر
+
+1. **Authentication ← Users ← Add user**
+2. البريد: `admin@store.com` (أو بريدك الحقيقي)
+3. كلمة المرور: اللي إنت عايزه
+4. **Add user**
+
+> لو استخدمت بريد مختلف، غيّره في مكانين:
+> - `lib/core/config/app_config.dart` ← `adminEmail`
+> - ملفي `firebase/firestore.rules` و `firebase/storage.rules` ← `admin@store.com`
+> وبعدين اعمل **Publish** للقواعد تاني.
+
+## 8️⃣ شغّل الوضع المتصل
+
+افتح `lib/core/config/app_config.dart` وغيّر سطر واحد:
+
+```dart
+static const BackendType backend = BackendType.firebase;
+```
+
+وبعدين:
+
+```powershell
+flutter pub get
+flutter run
+```
+
+## ✅ اتأكد إنه اشتغل
+
+ادخل كأدمن → **لوحة التحكم** → فوق خالص هتلاقي شريط أسود مكتوب عليه:
+
+> ☁️ **متصل بالسيرفر ✅**
+
+**جرّب بنفسك:** ضيف منتج من موبايلك، وافتح التطبيق على موبايل تاني — هتلاقي المنتج ظهر.
+
+---
+
+## 💰 التكلفة
+
+الباقة المجانية (Spark) بتديك يومياً:
+- **50,000** قراءة · **20,000** كتابة
+- **1 جيجا** تخزين بيانات · **5 جيجا** صور
+
+ده يكفي متجر صغير ومتوسط مرتاح. لو كبرت، الباقة المدفوعة بتحسب بالاستهلاك (غالباً أقل من 100 ج.م شهرياً في البداية).
+
+---
+
+## ⚠️ لو ظهرت مشاكل
+
+| المشكلة | الحل |
+|---|---|
+| `[core/not-initialized]` | ملف `google-services.json` مش في `android/app/` |
+| `PERMISSION_DENIED` | قواعد الأمان مترفعتش — راجع خطوة 6 |
+| الشريط بيقول "فشل الاتصال" | تأكد إن `package name` في Firebase = `com.moda.store` |
+| الصور مش بتترفع | فعّل **Storage** وارفع قواعده (خطوة 5 و 6) |
+| بعد التغيير لسه محلي | اعمل `flutter clean` ثم `flutter run` |
+
+> 💡 التطبيق **مش هيقع أبداً** لو Firebase مظبوطش — هيرجع للوضع المحلي تلقائياً ويكتب السبب في التيرمنال.
+
+---
+
 # 🚀 النشر على جوجل بلاي
 
 ## 🔴 اقرأ ده الأول — أهم نقطة في الملف كله

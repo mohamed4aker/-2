@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/image_uploader.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -122,6 +123,23 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       return;
     }
 
+    setState(() => _saving = true);
+
+    // رفع الصور على السيرفر أول حاجة عشان العملاء يشوفوها.
+    // (في الوضع المحلي بترجع المسارات زي ما هي)
+    final List<String> imageUrls;
+    try {
+      imageUrls = await ImageUploader.uploadAll(_images);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('فشل رفع الصور — تأكد من الإنترنت')),
+        );
+      }
+      return;
+    }
+
     final product = Product(
       id: widget.product?.id ??
           'p_${DateTime.now().millisecondsSinceEpoch}',
@@ -133,12 +151,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       sizes: _splitList(_sizesController.text),
       colors: _splitList(_colorsController.text),
       stock: int.parse(_stockController.text.trim()),
-      images: _images,
+      images: imageUrls,
       isFeatured: _isFeatured,
       createdAt: widget.product?.createdAt ?? DateTime.now(),
     );
 
-    setState(() => _saving = true);
     try {
       final provider = context.read<ProductsProvider>();
       if (_isEdit) {

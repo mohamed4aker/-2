@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/di/repository_factory.dart';
 import '../data/category_repository.dart';
 import '../data/models/product.dart';
 import '../data/models/product_category.dart';
@@ -9,8 +10,9 @@ class ProductsProvider extends ChangeNotifier {
   ProductsProvider({
     ProductRepository? productRepository,
     CategoryRepository? categoryRepository,
-  })  : _productRepository = productRepository ?? MockProductRepository(),
-        _categoryRepository = categoryRepository ?? MockCategoryRepository();
+  })  : _productRepository = productRepository ?? RepositoryFactory.products(),
+        _categoryRepository =
+            categoryRepository ?? RepositoryFactory.categories();
 
   final ProductRepository _productRepository;
   final CategoryRepository _categoryRepository;

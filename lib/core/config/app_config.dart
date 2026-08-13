@@ -1,24 +1,56 @@
+/// مصدر البيانات اللي التطبيق بيشتغل بيه.
+enum BackendType {
+  /// تخزين على الجهاز نفسه — للتجربة والعرض فقط.
+  /// المنتجات اللي تضيفها مش هتظهر لأي حد تاني.
+  local,
+
+  /// سيرفر Firebase — كل العملاء يشوفوا نفس المنتجات والطلبات توصلك.
+  firebase,
+}
+
 /// إعدادات عامة للتطبيق تتحكم في سلوكه قبل النشر.
 class AppConfig {
   AppConfig._();
 
   /// ======================================================================
-  ///                    🔴 مفتاح مهم قبل الرفع على جوجل بلاي
+  ///                🔴 أهم مفتاحين في المشروع كله
   /// ======================================================================
+
+  /// **١. مصدر البيانات**
   ///
-  /// true  = التطبيق يبدأ بـ ١٤ منتج و٥ طلبات وتقييمات تجريبية (للعرض والتجربة)
-  /// false = التطبيق يبدأ **فاضي تماماً** — تضيف منتجاتك الحقيقية من لوحة التحكم
+  /// - [BackendType.local]    → التطبيق شغال على الجهاز بس (للعرض والتجربة)
+  /// - [BackendType.firebase] → التطبيق متصل بالسيرفر (متجر حقيقي)
   ///
-  /// **قبل ما ترفع على جوجل بلاي غيّرها لـ false.**
+  /// سيبها `local` لحد ما تخلص إعداد Firebase (الخطوات في README)،
+  /// وبعدين غيّرها لـ `firebase`.
   ///
-  /// ملاحظة: البيانات التجريبية بتتحمّل مرة واحدة بس أول تشغيل. لو غيّرت
-  /// القيمة دي بعد ما شغّلت التطبيق، امسح بيانات التطبيق من إعدادات الموبايل
-  /// (أو اعمل إلغاء تثبيت وتثبيت) عشان يبدأ من جديد.
+  /// ملاحظة: لو غيّرتها لـ firebase من غير ما تحط ملف google-services.json
+  /// التطبيق هيرجع تلقائياً للوضع المحلي بدل ما يقع.
+  static const BackendType backend = BackendType.local;
+
+  /// **٢. البيانات التجريبية**
+  ///
+  /// true  = يبدأ بـ ١٤ منتج و٥ طلبات تجريبية (للعرض)
+  /// false = يبدأ فاضي تماماً (للإطلاق الحقيقي)
+  ///
+  /// بتأثر على الوضع المحلي بس — مع Firebase البيانات بتيجي من السيرفر.
   static const bool useDemoData = true;
 
-  /// إصدار التطبيق كما يظهر في شاشة "حسابي".
-  static const String appVersion = '1.0.0';
+  /// هل التطبيق متصل بسيرفر؟
+  static bool get isOnline => backend == BackendType.firebase;
 
-  /// اسم التطبيق الافتراضي.
+  static const String appVersion = '1.0.0';
   static const String appName = 'Moda';
+
+  // ---------------- أسماء الجداول في Firestore ----------------
+  static const String collectionProducts = 'products';
+  static const String collectionCategories = 'categories';
+  static const String collectionOrders = 'orders';
+  static const String collectionUsers = 'users';
+  static const String collectionSettings = 'settings';
+  static const String collectionReviews = 'reviews';
+
+  /// البريد اللي بيتعامل كأدمن (صاحب المتجر).
+  /// غيّره لبريدك الحقيقي قبل الإطلاق.
+  static const String adminEmail = 'admin@store.com';
 }

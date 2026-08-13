@@ -1,0 +1,74 @@
+rules_version = '2';
+
+// ============================================================
+//   قواعد الأمان لقاعدة بيانات Moda
+//   انسخ الملف ده كله والصقه في:
+//   Firebase Console ← Firestore Database ← Rules ← Publish
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // بريد صاحب المتجر — غيّره لبريدك الحقيقي
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email == 'admin@store.com';
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // ---------- المنتجات ----------
+    // أي حد يقدر يتفرج (حتى من غير تسجيل)
+    // صاحب المتجر بس اللي يضيف ويعدّل ويحذف
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      // السماح بخصم المخزون عند الشراء فقط
+      allow update: if isSignedIn()
+                    && request.resource.data.diff(resource.data)
+                         .affectedKeys().hasOnly(['stock']);
+    }
+
+    // ---------- التصنيفات ----------
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- الطلبات ----------
+    // العميل يشوف طلباته هو بس، وصاحب المتجر يشوف كل الطلبات
+    match /orders/{orderId} {
+      allow read: if isAdmin()
+                  || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn();
+      // العميل يقدر يلغي طلبه، وصاحب المتجر يغيّر أي حاجة
+      allow update: if isAdmin()
+                    || (isSignedIn()
+                        && resource.data.userId == request.auth.uid
+                        && request.resource.data.status == 'cancelled');
+      allow delete: if isAdmin();
+    }
+
+    // ---------- المستخدمين ----------
+    // كل واحد يقرا ويعدّل بياناته هو بس
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isAdmin();
+    }
+
+    // ---------- التقييمات ----------
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- إعدادات المتجر ----------
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

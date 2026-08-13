@@ -2,13 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/di/repository_factory.dart';
 import '../../../core/storage/local_storage.dart';
 import '../data/auth_repository.dart';
 import '../data/models/app_user.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider({AuthRepository? repository})
-      : _repository = repository ?? MockAuthRepository();
+      : _repository = repository ?? RepositoryFactory.auth();
 
   final AuthRepository _repository;
 
@@ -78,6 +79,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    try {
+      await _repository.logout();
+    } catch (_) {
+      // لو فشل إنهاء الجلسة على السيرفر بنكمّل الخروج محلياً برضه.
+    }
     _user = null;
     await LocalStorage.remove(LocalStorage.keyAuthUser);
     await LocalStorage.remove(LocalStorage.keyAuthToken);

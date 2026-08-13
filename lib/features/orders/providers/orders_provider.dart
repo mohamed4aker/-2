@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/di/repository_factory.dart';
 import '../../cart/data/models/cart_item.dart';
 import '../data/models/order.dart';
 import '../data/order_repository.dart';
 
 class OrdersProvider extends ChangeNotifier {
   OrdersProvider({OrderRepository? repository})
-      : _repository = repository ?? MockOrderRepository();
+      : _repository = repository ?? RepositoryFactory.orders();
 
   final OrderRepository _repository;
 

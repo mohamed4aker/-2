@@ -8,6 +8,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// إضافة Firebase بتتفعّل بس لو ملف google-services.json موجود،
+// عشان التطبيق يفضل يتبني عادي قبل ما تظبط Firebase.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // إعدادات التوقيع للنشر على جوجل بلاي.
 // أنشئ ملف android/key.properties (مش بيترفع على git) وحط فيه:
 //   storePassword=...
@@ -36,7 +42,8 @@ android {
 
     defaultConfig {
         applicationId = "com.moda.store"
-        minSdk = flutter.minSdkVersion
+        // Firebase Auth بيحتاج أندرويد 6 فأعلى (API 23)
+        minSdk = maxOf(flutter.minSdkVersion, 23)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

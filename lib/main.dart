@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'core/services/firebase_service.dart';
 import 'core/storage/local_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_provider.dart';
@@ -17,6 +18,8 @@ import 'features/settings/providers/settings_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LocalStorage.init();
+  // بيتصل بالسيرفر لو مفعّل في AppConfig — ولو فشل بيكمّل محلياً.
+  await FirebaseService.init();
   runApp(const ModaApp());
 }
 

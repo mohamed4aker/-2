@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/di/repository_factory.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/product_image.dart';
@@ -34,6 +35,44 @@ class AdminDashboardScreen extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
+          // ---------- حالة الاتصال بالسيرفر ----------
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color:
+                  RepositoryFactory.isOnline ? Colors.black : Colors.white,
+              border: Border.all(color: Colors.black, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  RepositoryFactory.isOnline
+                      ? Icons.cloud_done_outlined
+                      : Icons.cloud_off_outlined,
+                  size: 20,
+                  color: RepositoryFactory.isOnline
+                      ? Colors.white
+                      : Colors.black,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    RepositoryFactory.statusLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: RepositoryFactory.isOnline
+                          ? Colors.white
+                          : Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Row(
             children: [
               _StatCard(

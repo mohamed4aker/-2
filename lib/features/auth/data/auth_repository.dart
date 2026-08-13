@@ -17,6 +17,9 @@ abstract class AuthRepository {
 
   /// الدخول كضيف (للطلب من غير تسجيل).
   Future<AppUser> continueAsGuest();
+
+  /// إنهاء الجلسة (مهم مع السيرفر عشان الحساب ما يفضلش مفتوح).
+  Future<void> logout();
 }
 
 /// تنفيذ تجريبي: حساب الأدمن ثابت، وحسابات العملاء تُحفظ في التخزين المحلي.
@@ -151,6 +154,9 @@ class MockAuthRepository implements AuthRepository {
     await _saveRegisteredUsers(users);
     return user;
   }
+
+  @override
+  Future<void> logout() async {}
 
   @override
   Future<AppUser> continueAsGuest() async {
