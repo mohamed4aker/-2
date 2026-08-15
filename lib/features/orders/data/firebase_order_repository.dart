@@ -1,4 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Firestore بيصدّر كلاس اسمه Order كمان، فبنخفيه عشان ميتعارضش
+// مع كلاس الطلب بتاعنا.
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 
 import '../../../core/config/app_config.dart';
 import '../../products/data/firebase_product_repository.dart';
