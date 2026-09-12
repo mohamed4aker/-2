@@ -26,7 +26,7 @@ class AppConfig {
   ///
   /// ملاحظة: لو غيّرتها لـ firebase من غير ما تحط ملف google-services.json
   /// التطبيق هيرجع تلقائياً للوضع المحلي بدل ما يقع.
-  static const BackendType backend = BackendType.local;
+  static const BackendType backend = BackendType.firebase;
 
   /// **٢. البيانات التجريبية**
   ///
