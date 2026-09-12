@@ -1,0 +1,74 @@
+# بناء ملف APK جاهز للتنزيل على الموبايل.
+#
+# بيشتغل لوحده مع كل تعديل على الفرع، وكمان تقدر تشغّله بإيدك من تبويب
+# Actions ← Build APK ← Run workflow.
+#
+# الملف بيتنشر في صفحة Releases، فتقدر تفتحها من الموبايل وتنزّله مباشرة:
+#   https://github.com/mohamed4aker/-2/releases/latest
+
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/flutter-fashion-ecommerce-cp0rx7
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # google-services.json مش مرفوع على الريبو (الريبو public) — بنجيبه
+      # من Secret اسمه GOOGLE_SERVICES_JSON. من غيره التطبيق هيشتغل
+      # بالوضع المحلي.
+      - name: Write google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "::notice::google-services.json موجود — التطبيق هيتصل بفايربيز"
+          else
+            echo "::warning::Secret اسمه GOOGLE_SERVICES_JSON مش متسجّل — التطبيق هيشتغل بالوضع المحلي وكل عميل هيلاقيه فاضي"
+          fi
+
+      - run: flutter pub get
+
+      # الـ infos تحذيرات شكلية مش بتوقف البناء — الأخطاء الحقيقية بتوقفه.
+      - run: flutter analyze --no-fatal-infos
+
+      - run: flutter build apk --release
+
+      - name: Publish the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk Moda.apk
+          gh release create "build-${{ github.run_number }}" Moda.apk \
+            --title "Moda — نسخة ${{ github.run_number }}" \
+            --notes "نزّل ملف **Moda.apk** من تحت وثبّته على الموبايل.
+
+          > للتجربة والتثبيت المباشر بس — مش دي النسخة اللي بترفعها على جوجل بلاي.
+          > نسخة بلاي ستور محتاجة مفتاح التوقيع بتاعك (\`key.properties\`).
+
+          الكوميت: ${{ github.sha }}" \
+            --latest
