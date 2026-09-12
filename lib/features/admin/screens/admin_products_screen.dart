@@ -64,7 +64,7 @@ class AdminProductsScreen extends StatelessWidget {
           ? const EmptyView(
               icon: Icons.inventory_2_outlined,
               title: 'لا توجد منتجات',
-              subtitle: 'أضيفي أول منتج بالزر بالأسفل',
+              subtitle: 'أضف أول منتج بالزر بالأسفل',
             )
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),

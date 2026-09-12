@@ -184,6 +184,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   ),
                 ),
 
+                // ---------- نفس المنتج بألوان تانية ----------
+                _VariantsRow(product: product),
+
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -512,6 +515,125 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// شريط ألوان نفس المنتج — بيظهر تحت الصورة الكبيرة على طول.
+///
+/// كل لون منتج مستقل عنده صوره وسعره ومخزونه، ولما العميل يدوس على لون
+/// بيتنقل لصفحة اللون ده.
+class _VariantsRow extends StatelessWidget {
+  const _VariantsRow({required this.product});
+
+  final Product product;
+
+  @override
+  Widget build(BuildContext context) {
+    final variants = context.watch<ProductsProvider>().variantGroupOf(product);
+
+    // مفيش ألوان تانية → مفيش شريط.
+    if (variants.length < 2) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Row(
+            children: [
+              Container(width: 4, height: 18, color: Colors.black),
+              const SizedBox(width: 8),
+              const Text(
+                'نفس المنتج بألوان تانية',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              Text(
+                '${variants.length} ألوان',
+                style: const TextStyle(fontSize: 12, color: AppTheme.grey),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 116,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: variants.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final variant = variants[index];
+              final selected = variant.id == product.id;
+
+              return InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: selected
+                    ? null
+                    : () => Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProductDetailsScreen(productId: variant.id),
+                          ),
+                        ),
+                child: SizedBox(
+                  width: 78,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 78,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: selected ? Colors.black : AppTheme.border,
+                            width: selected ? 2.5 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            ProductImage(path: variant.mainImage),
+                            if (!variant.inStock)
+                              Container(
+                                color: Colors.white70,
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'نفدت',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        variant.displayColor,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight:
+                              selected ? FontWeight.w800 : FontWeight.w500,
+                          color: selected ? Colors.black : AppTheme.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 4),
+      ],
     );
   }
 }

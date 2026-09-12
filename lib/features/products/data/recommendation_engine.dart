@@ -33,6 +33,15 @@ class RecommendationEngine {
     final result = <Product>[];
     final usedIds = <String>{product.id};
 
+    // نفس المنتج بلون تاني مش "اقتراح" — ده بيظهر في شريط الألوان
+    // تحت الصورة، فبنستبعده من "كمّل إطلالتك".
+    if (product.hasVariants) {
+      final group = product.variantGroup!.trim();
+      for (final p in allProducts) {
+        if (p.variantGroup?.trim() == group) usedIds.add(p.id);
+      }
+    }
+
     if (auto) {
       // ١. المنتجات اللي اتشترت مع المنتج ده في نفس الطلب (الأكثر تكراراً أولاً).
       final coCount = <String, int>{};

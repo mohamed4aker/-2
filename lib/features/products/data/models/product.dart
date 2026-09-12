@@ -11,6 +11,8 @@ class Product {
     required this.stock,
     this.images = const [],
     this.isFeatured = false,
+    this.variantGroup,
+    this.colorName,
     required this.createdAt,
   });
 
@@ -27,7 +29,26 @@ class Product {
   final int stock;
   final List<String> images;
   final bool isFeatured;
+
+  /// اسم مجموعة الألوان — المنتجات اللي ليها نفس الاسم بتتعامل كنفس
+  /// المنتج بألوان مختلفة، وبتظهر لبعضها في صفحة المنتج.
+  /// مثال: شنطة سوداء وشنطة بيج ليهم نفس `variantGroup = "شنطة يد جلد"`.
+  final String? variantGroup;
+
+  /// اسم اللون اللي بيظهر تحت صورة اللون في صفحة المنتج.
+  final String? colorName;
+
   final DateTime createdAt;
+
+  /// هل المنتج ده جزء من مجموعة ألوان؟
+  bool get hasVariants =>
+      variantGroup != null && variantGroup!.trim().isNotEmpty;
+
+  /// اسم اللون المعروض (لو مش متكتب بياخد أول لون من قائمة الألوان).
+  String get displayColor =>
+      colorName?.trim().isNotEmpty == true
+          ? colorName!.trim()
+          : (colors.isNotEmpty ? colors.first : 'اللون');
 
   bool get hasDiscount => discountPrice != null && discountPrice! < price;
 
@@ -52,6 +73,8 @@ class Product {
     int? stock,
     List<String>? images,
     bool? isFeatured,
+    String? variantGroup,
+    String? colorName,
   }) {
     return Product(
       id: id,
@@ -66,6 +89,8 @@ class Product {
       stock: stock ?? this.stock,
       images: images ?? this.images,
       isFeatured: isFeatured ?? this.isFeatured,
+      variantGroup: variantGroup ?? this.variantGroup,
+      colorName: colorName ?? this.colorName,
       createdAt: createdAt,
     );
   }
@@ -82,6 +107,8 @@ class Product {
         stock: (json['stock'] as num?)?.toInt() ?? 0,
         images: List<String>.from(json['images'] as List? ?? []),
         isFeatured: json['isFeatured'] as bool? ?? false,
+        variantGroup: json['variantGroup'] as String?,
+        colorName: json['colorName'] as String?,
         createdAt:
             DateTime.tryParse(json['createdAt'] as String? ?? '') ??
                 DateTime.now(),
@@ -99,6 +126,8 @@ class Product {
         'stock': stock,
         'images': images,
         'isFeatured': isFeatured,
+        'variantGroup': variantGroup,
+        'colorName': colorName,
         'createdAt': createdAt.toIso8601String(),
       };
 }

@@ -68,10 +68,10 @@ class HomeScreen extends StatelessWidget {
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: provider.categories.length,
+                      itemCount: provider.rootCategories.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 12),
                       itemBuilder: (context, index) {
-                        final category = provider.categories[index];
+                        final category = provider.rootCategories[index];
                         return InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () => Navigator.of(context).push(

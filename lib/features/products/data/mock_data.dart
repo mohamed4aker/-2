@@ -1,3 +1,4 @@
+import '../../../core/config/app_config.dart';
 import 'models/product.dart';
 import 'models/product_category.dart';
 
@@ -10,12 +11,33 @@ class MockData {
   static const String catSunglasses = 'cat_sunglasses';
   static const String catAccessories = 'cat_accessories';
 
-  static final List<ProductCategory> categories = [
-    const ProductCategory(id: catShoes, name: 'أحذية'),
-    const ProductCategory(id: catBags, name: 'شنط'),
-    const ProductCategory(id: catSunglasses, name: 'نظارات شمسية'),
-    const ProductCategory(id: catAccessories, name: 'إكسسوارات'),
+  // مثال على تصنيف جوه تصنيف: "رجالي" وجواه "أحذية" و"شنط".
+  static const String catMen = 'cat_men';
+  static const String catMenShoes = 'cat_men_shoes';
+  static const String catMenBags = 'cat_men_bags';
+
+  /// التصنيفات الأساسية — بتتحمّل دايماً حتى بعد مسح البيانات التجريبية.
+  static const List<ProductCategory> baseCategories = [
+    ProductCategory(id: catShoes, name: 'أحذية'),
+    ProductCategory(id: catBags, name: 'شنط'),
+    ProductCategory(id: catSunglasses, name: 'نظارات شمسية'),
+    ProductCategory(id: catAccessories, name: 'إكسسوارات'),
   ];
+
+  /// مثال للتصنيف المتداخل — تصنيف رئيسي جواه أقسام.
+  /// العميل يدوس على "رجالي" فيدخل على الأقسام اللي جواه.
+  static const List<ProductCategory> demoCategories = [
+    ProductCategory(id: catMen, name: 'رجالي'),
+    ProductCategory(id: catMenShoes, name: 'أحذية رجالي', parentId: catMen),
+    ProductCategory(id: catMenBags, name: 'شنط رجالي', parentId: catMen),
+  ];
+
+  static List<ProductCategory> get categories => AppConfig.useDemoData
+      ? [...baseCategories, ...demoCategories]
+      : List.of(baseCategories);
+
+  /// اسم مجموعة الألوان للشنطة اللي ليها 3 ألوان.
+  static const String _bagGroup = 'شنطة يد جلد فاخرة';
 
   static String _img(String seed) =>
       'https://picsum.photos/seed/$seed/800/800?grayscale';
@@ -77,18 +99,50 @@ class MockData {
       images: [_img('moda-boot-1'), _img('moda-boot-2')],
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
     ),
+    // ---- نفس الشنطة بـ 3 ألوان (كل لون منتج مستقل بنفس اسم المجموعة) ----
     Product(
       id: 'p5',
-      name: 'شنطة يد جلد فاخرة',
+      name: 'شنطة يد جلد فاخرة — أسود',
       description:
           'شنطة يد نسائية جلد طبيعي بتصميم فاخر وحجم متوسط، تتسع لكل احتياجاتك اليومية مع إغلاق مغناطيسي آمن.',
       price: 1850,
       discountPrice: 1480,
       categoryId: catBags,
-      colors: ['أسود', 'أبيض', 'بيج'],
+      colors: ['أسود'],
       stock: 10,
       images: [_img('moda-bag-1'), _img('moda-bag-2'), _img('moda-bag-3')],
       isFeatured: true,
+      variantGroup: _bagGroup,
+      colorName: 'أسود',
+      createdAt: DateTime.now().subtract(const Duration(days: 3)),
+    ),
+    Product(
+      id: 'p15',
+      name: 'شنطة يد جلد فاخرة — بيج',
+      description:
+          'نفس الشنطة الفاخرة بلون بيج هادي يناسب إطلالات النهار والصيف.',
+      price: 1850,
+      discountPrice: 1480,
+      categoryId: catBags,
+      colors: ['بيج'],
+      stock: 6,
+      images: [_img('moda-bag-beige-1'), _img('moda-bag-beige-2')],
+      variantGroup: _bagGroup,
+      colorName: 'بيج',
+      createdAt: DateTime.now().subtract(const Duration(days: 3)),
+    ),
+    Product(
+      id: 'p16',
+      name: 'شنطة يد جلد فاخرة — أبيض',
+      description:
+          'نفس الشنطة الفاخرة بلون أبيض ناصع يدي إطلالتك لمسة راقية.',
+      price: 1850,
+      categoryId: catBags,
+      colors: ['أبيض'],
+      stock: 4,
+      images: [_img('moda-bag-white-1'), _img('moda-bag-white-2')],
+      variantGroup: _bagGroup,
+      colorName: 'أبيض',
       createdAt: DateTime.now().subtract(const Duration(days: 3)),
     ),
     Product(
@@ -205,6 +259,34 @@ class MockData {
       stock: 30,
       images: [_img('moda-hoops-1')],
       createdAt: DateTime.now().subtract(const Duration(days: 9)),
+    ),
+
+    // ---------- منتجات القسم الرجالي (مثال للتصنيف المتداخل) ----------
+    Product(
+      id: 'p17',
+      name: 'حذاء رجالي جلد كلاسيك',
+      description:
+          'حذاء رجالي جلد طبيعي بتصميم كلاسيك يناسب الشغل والمناسبات، نعل مريح وخياطة متينة.',
+      price: 1950,
+      discountPrice: 1590,
+      categoryId: catMenShoes,
+      sizes: ['40', '41', '42', '43', '44'],
+      colors: ['أسود', 'بني'],
+      stock: 7,
+      images: [_img('moda-men-shoe-1'), _img('moda-men-shoe-2')],
+      createdAt: DateTime.now().subtract(const Duration(days: 2)),
+    ),
+    Product(
+      id: 'p18',
+      name: 'شنطة لابتوب رجالي',
+      description:
+          'شنطة لابتوب بجيب مبطّن يحمي الجهاز، وحزام كتف قابل للتعديل — عملية وأنيقة.',
+      price: 1350,
+      categoryId: catMenBags,
+      colors: ['أسود', 'رمادي'],
+      stock: 9,
+      images: [_img('moda-men-bag-1'), _img('moda-men-bag-2')],
+      createdAt: DateTime.now().subtract(const Duration(days: 4)),
     ),
   ];
 }

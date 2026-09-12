@@ -6,6 +6,7 @@ import '../../../core/config/app_config.dart';
 import '../../settings/data/models/payout_account.dart';
 import '../../settings/providers/settings_provider.dart';
 import 'admin_ticker_screen.dart';
+import 'contact_settings_screen.dart';
 import 'data_management_screen.dart';
 import 'payout_settings_screen.dart';
 
@@ -236,6 +237,32 @@ class AdminSettingsScreen extends StatelessWidget {
           label: 'عنوان المتجر',
           value: s.storeAddress,
           onSubmitted: (v) => provider.update(s.copyWith(storeAddress: v)),
+        ),
+        Container(
+          margin: const EdgeInsets.only(top: 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppTheme.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            leading: const Icon(Icons.contact_phone_outlined),
+            title: const Text(
+              'بيانات التواصل',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+            ),
+            subtitle: Text(
+              s.hasContactInfo
+                  ? 'واتساب · سوشيال · مواعيد العمل — بتظهر للعميل'
+                  : 'ضيف واتساب وصفحات السوشيال عشان يوصلوا لك',
+              style: const TextStyle(fontSize: 11),
+            ),
+            trailing: const Icon(Icons.arrow_back_ios_new, size: 14),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const ContactSettingsScreen(),
+              ),
+            ),
+          ),
         ),
 
         // ---------- إدارة البيانات ----------

@@ -9,6 +9,7 @@ import '../../notifications/providers/notifications_provider.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../orders/screens/my_orders_screen.dart';
 import '../../settings/providers/settings_provider.dart';
+import '../../settings/screens/contact_screen.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -61,6 +62,15 @@ class _GuestView extends StatelessWidget {
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const RegisterScreen()),
               ),
+            ),
+            const SizedBox(height: 24),
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ContactScreen()),
+              ),
+              icon: const Icon(Icons.support_agent_outlined, size: 18),
+              label: const Text('تواصل معنا'),
+              style: TextButton.styleFrom(foregroundColor: Colors.black),
             ),
           ],
         ),
@@ -179,8 +189,13 @@ class _LoggedInView extends StatelessWidget {
         ),
         _Tile(
           icon: Icons.support_agent_outlined,
-          title: 'خدمة العملاء',
-          subtitle: settings.storePhone,
+          title: 'تواصل معنا',
+          subtitle: settings.hasContactInfo
+              ? 'واتساب · تليفون · سوشيال · مواعيد العمل'
+              : settings.storePhone,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ContactScreen()),
+          ),
         ),
         _Tile(
           icon: Icons.storefront_outlined,

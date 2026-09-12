@@ -32,6 +32,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   late final TextEditingController _sizesController;
   late final TextEditingController _colorsController;
   late final TextEditingController _stockController;
+  late final TextEditingController _variantGroupController;
+  late final TextEditingController _colorNameController;
 
   String? _categoryId;
   bool _isFeatured = false;
@@ -57,6 +59,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         TextEditingController(text: p?.colors.join('، ') ?? '');
     _stockController =
         TextEditingController(text: p == null ? '' : '${p.stock}');
+    _variantGroupController =
+        TextEditingController(text: p?.variantGroup ?? '');
+    _colorNameController = TextEditingController(text: p?.colorName ?? '');
     _categoryId = p?.categoryId;
     _isFeatured = p?.isFeatured ?? false;
     _images = List.of(p?.images ?? const []);
@@ -71,6 +76,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _sizesController.dispose();
     _colorsController.dispose();
     _stockController.dispose();
+    _variantGroupController.dispose();
+    _colorNameController.dispose();
     super.dispose();
   }
 
@@ -89,6 +96,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     setState(() => _images.add(picked.path));
   }
 
+  String? _emptyToNull(String text) =>
+      text.trim().isEmpty ? null : text.trim();
+
   List<String> _splitList(String text) => text
       .split(RegExp(r'[،,]'))
       .map((e) => e.trim())
@@ -99,13 +109,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_categoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('اختاري التصنيف')),
+        const SnackBar(content: Text('اختر التصنيف')),
       );
       return;
     }
     if (_images.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أضيفي صورة واحدة على الأقل')),
+        const SnackBar(content: Text('أضف صورة واحدة على الأقل')),
       );
       return;
     }
@@ -153,6 +163,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       stock: int.parse(_stockController.text.trim()),
       images: imageUrls,
       isFeatured: _isFeatured,
+      variantGroup: _emptyToNull(_variantGroupController.text),
+      colorName: _emptyToNull(_colorNameController.text),
       createdAt: widget.product?.createdAt ?? DateTime.now(),
     );
 
@@ -179,13 +191,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   String? _numberValidator(String? v, {bool required = true}) {
     final value = v?.trim() ?? '';
     if (value.isEmpty) return required ? 'مطلوب' : null;
-    if (double.tryParse(value) == null) return 'أدخلي رقماً صحيحاً';
+    if (double.tryParse(value) == null) return 'أدخل رقماً صحيحاً';
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final categories = context.watch<ProductsProvider>().categories;
+    final provider = context.watch<ProductsProvider>();
+    // المنتج بيتحط في التصنيفات النهائية بس (اللي مالهاش فروع)، عشان
+    // ميتحطش في "رجالي" وهي جواها "أحذية" و"شنط".
+    final categories = provider.leafCategories;
+    final groups = provider.variantGroups;
 
     return Scaffold(
       appBar: AppBar(
@@ -264,7 +280,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               label: 'اسم المنتج',
               controller: _nameController,
               validator: (v) => (v == null || v.trim().length < 2)
-                  ? 'أدخلي اسم المنتج'
+                  ? 'أدخل اسم المنتج'
                   : null,
             ),
             const SizedBox(height: 12),
@@ -273,7 +289,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               controller: _descriptionController,
               maxLines: 3,
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'أدخلي الوصف' : null,
+                  (v == null || v.trim().isEmpty) ? 'أدخل الوصف' : null,
             ),
             const SizedBox(height: 12),
             Row(
@@ -300,26 +316,41 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _categoryId,
+              value: categories.any((c) => c.id == _categoryId)
+                  ? _categoryId
+                  : null,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'التصنيف'),
               items: categories
                   .map(
                     (c) => DropdownMenuItem(
                       value: c.id,
-                      child: Text(c.name),
+                      child: Text(
+                        provider.categoryPath(c.id),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   )
                   .toList(),
               onChanged: (v) => setState(() => _categoryId = v),
             ),
+            if (categories.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  'مفيش تصنيفات لسه — أضف تصنيف من شاشة "التصنيفات" الأول',
+                  style: TextStyle(fontSize: 12, color: AppTheme.grey),
+                ),
+              ),
             const SizedBox(height: 12),
             AppTextField(
-              label: 'المقاسات (افصلي بينها بفاصلة، مثال: 37، 38، 39)',
+              label: 'المقاسات (افصل بينها بفاصلة، مثال: 37، 38، 39)',
               controller: _sizesController,
             ),
             const SizedBox(height: 12),
             AppTextField(
-              label: 'الألوان (افصلي بينها بفاصلة، مثال: أسود، أبيض)',
+              label: 'الألوان (افصل بينها بفاصلة، مثال: أسود، أبيض)',
               controller: _colorsController,
             ),
             const SizedBox(height: 12),
@@ -331,12 +362,59 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 final value = v?.trim() ?? '';
                 if (value.isEmpty) return 'مطلوب';
                 if (int.tryParse(value) == null) {
-                  return 'أدخلي رقماً صحيحاً';
+                  return 'أدخل رقماً صحيحاً';
                 }
                 return null;
               },
             ),
-            const SizedBox(height: 8),
+
+            // ---------- مجموعة الألوان ----------
+            const Divider(height: 32),
+            const Text(
+              'نفس المنتج بألوان تانية',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'لو الشنطة دي ليها ألوان تانية، اعمل منتج لكل لون واكتب لهم '
+              'نفس "اسم المجموعة". العميل هيلاقي الألوان تحت الصورة الكبيرة '
+              'ولما يدوس على لون هيفتح صفحته.',
+              style: TextStyle(fontSize: 12, color: AppTheme.grey, height: 1.6),
+            ),
+            const SizedBox(height: 12),
+            AppTextField(
+              label: 'اسم المجموعة (مثال: شنطة يد جلد) — اختياري',
+              controller: _variantGroupController,
+            ),
+            if (groups.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'مجموعات موجودة — دوس على واحدة تتكتب:',
+                style: TextStyle(fontSize: 12, color: AppTheme.grey),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: groups
+                    .map(
+                      (g) => ActionChip(
+                        label: Text(g, style: const TextStyle(fontSize: 12)),
+                        onPressed: () => setState(() {
+                          _variantGroupController.text = g;
+                        }),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+            const SizedBox(height: 12),
+            AppTextField(
+              label: 'لون المنتج ده (مثال: أسود) — اختياري',
+              controller: _colorNameController,
+            ),
+            const Divider(height: 32),
+
             SwitchListTile(
               value: _isFeatured,
               onChanged: (v) => setState(() => _isFeatured = v),

@@ -26,6 +26,14 @@ class StoreSettings {
     this.storeAddress = 'القاهرة، مصر',
     this.lowStockThreshold = 3,
     this.payout = const PayoutAccount(),
+    this.whatsapp = '',
+    this.storeEmail = '',
+    this.facebook = '',
+    this.instagram = '',
+    this.tiktok = '',
+    this.workingHours = 'من 10 صباحاً حتى 10 مساءً',
+    this.mapsLink = '',
+    this.aboutStore = '',
   });
 
   // ---------- الشريط المتحرك ----------
@@ -68,6 +76,32 @@ class StoreSettings {
   /// حساب استلام الأموال (بنك / محفظة / إنستاباي).
   final PayoutAccount payout;
 
+  // ---------- بيانات التواصل (تظهر للعميل في صفحة "تواصل معنا") ----------
+
+  /// رقم واتساب بصيغة دولية من غير + مثال: 201012345678
+  final String whatsapp;
+  final String storeEmail;
+
+  /// رابط أو اسم مستخدم الصفحة.
+  final String facebook;
+  final String instagram;
+  final String tiktok;
+  final String workingHours;
+
+  /// رابط الموقع على خرائط جوجل.
+  final String mapsLink;
+
+  /// نبذة عن المتجر.
+  final String aboutStore;
+
+  /// هل فيه أي وسيلة تواصل متسجّلة؟
+  bool get hasContactInfo =>
+      whatsapp.trim().isNotEmpty ||
+      storeEmail.trim().isNotEmpty ||
+      facebook.trim().isNotEmpty ||
+      instagram.trim().isNotEmpty ||
+      tiktok.trim().isNotEmpty;
+
   List<TickerItem> get activeTickerItems =>
       tickerItems.where((t) => t.enabled).toList();
 
@@ -94,6 +128,14 @@ class StoreSettings {
     String? storeAddress,
     int? lowStockThreshold,
     PayoutAccount? payout,
+    String? whatsapp,
+    String? storeEmail,
+    String? facebook,
+    String? instagram,
+    String? tiktok,
+    String? workingHours,
+    String? mapsLink,
+    String? aboutStore,
   }) {
     return StoreSettings(
       tickerEnabled: tickerEnabled ?? this.tickerEnabled,
@@ -119,6 +161,14 @@ class StoreSettings {
       storeAddress: storeAddress ?? this.storeAddress,
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
       payout: payout ?? this.payout,
+      whatsapp: whatsapp ?? this.whatsapp,
+      storeEmail: storeEmail ?? this.storeEmail,
+      facebook: facebook ?? this.facebook,
+      instagram: instagram ?? this.instagram,
+      tiktok: tiktok ?? this.tiktok,
+      workingHours: workingHours ?? this.workingHours,
+      mapsLink: mapsLink ?? this.mapsLink,
+      aboutStore: aboutStore ?? this.aboutStore,
     );
   }
 
@@ -151,6 +201,15 @@ class StoreSettings {
         payout: json['payout'] == null
             ? const PayoutAccount()
             : PayoutAccount.fromJson(json['payout'] as Map<String, dynamic>),
+        whatsapp: json['whatsapp'] as String? ?? '',
+        storeEmail: json['storeEmail'] as String? ?? '',
+        facebook: json['facebook'] as String? ?? '',
+        instagram: json['instagram'] as String? ?? '',
+        tiktok: json['tiktok'] as String? ?? '',
+        workingHours: json['workingHours'] as String? ??
+            'من 10 صباحاً حتى 10 مساءً',
+        mapsLink: json['mapsLink'] as String? ?? '',
+        aboutStore: json['aboutStore'] as String? ?? '',
       );
 
   Map<String, dynamic> toJson() => {
@@ -176,6 +235,14 @@ class StoreSettings {
         'storeAddress': storeAddress,
         'lowStockThreshold': lowStockThreshold,
         'payout': payout.toJson(),
+        'whatsapp': whatsapp,
+        'storeEmail': storeEmail,
+        'facebook': facebook,
+        'instagram': instagram,
+        'tiktok': tiktok,
+        'workingHours': workingHours,
+        'mapsLink': mapsLink,
+        'aboutStore': aboutStore,
       };
 
   /// الإعدادات الافتراضية مع عناصر شريط جاهزة.
