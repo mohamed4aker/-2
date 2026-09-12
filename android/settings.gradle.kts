@@ -19,9 +19,11 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    // 8.9.1 هي أقل نسخة تقبلها مكتبات androidx اللي بتيجي مع Firebase
-    // (وGradle 8.12 الموجود في gradle-wrapper.properties بيدعمها).
-    id("com.android.application") version "8.9.1" apply false
+    // 8.11.1 هي أقل نسخة يقبلها Flutter الحالي (وكمان بتغطي الحد الأدنى
+    // اللي مكتبات androidx بتاعت Firebase بتطلبه، وكان 8.9.1).
+    // بتحتاج Gradle 8.13 أو أحدث — الموجود في gradle-wrapper.properties
+    // هو 8.14.3.
+    id("com.android.application") version "8.11.1" apply false
     id("org.jetbrains.kotlin.android") version "2.1.0" apply false
     // Firebase — بيتفعّل تلقائياً لما تحط ملف google-services.json
     id("com.google.gms.google-services") version "4.4.2" apply false
