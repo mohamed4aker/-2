@@ -135,6 +135,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
     setState(() => _saving = true);
 
+    // بناخد الـ provider قبل أي await عشان منستخدمش context بعد ما
+    // الشاشة ممكن تكون اتقفلت.
+    final productsProvider = context.read<ProductsProvider>();
+
     // رفع الصور على السيرفر أول حاجة عشان العملاء يشوفوها.
     // (في الوضع المحلي بترجع المسارات زي ما هي)
     final List<String> imageUrls;
@@ -169,11 +173,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
 
     try {
-      final provider = context.read<ProductsProvider>();
       if (_isEdit) {
-        await provider.updateProduct(product);
+        await productsProvider.updateProduct(product);
       } else {
-        await provider.addProduct(product);
+        await productsProvider.addProduct(product);
       }
       if (!mounted) return;
       Navigator.of(context).pop();

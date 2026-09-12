@@ -29,7 +29,9 @@ class FirebaseAuthRepository implements AuthRepository {
         email: _emailFor(identifier),
         password: password,
       );
-      return _loadProfile(credential.user!);
+      // await مهم هنا: من غيره لو _loadProfile رمت خطأ مش هيتمسك
+      // في الـ catch تحت والعميل هيشوف رسالة غير مفهومة.
+      return await _loadProfile(credential.user!);
     } on fb.FirebaseAuthException catch (e) {
       throw Exception(_messageFor(e));
     }
