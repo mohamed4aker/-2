@@ -24,7 +24,8 @@ plugins {
     // بتحتاج Gradle 8.13 أو أحدث — الموجود في gradle-wrapper.properties
     // هو 8.14.3.
     id("com.android.application") version "8.11.1" apply false
-    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    // 2.2.20 هي أقل نسخة يقبلها Flutter الحالي.
+    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
     // Firebase — بيتفعّل تلقائياً لما تحط ملف google-services.json
     id("com.google.gms.google-services") version "4.4.2" apply false
 }
