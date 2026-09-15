@@ -19,6 +19,7 @@ class FirebaseProductRepository implements ProductRepository {
   }
 
   /// بث حي للمنتجات — أي تعديل على السيرفر بيوصل للشاشة فوراً.
+  @override
   Stream<List<Product>> watchProducts() =>
       _collection.snapshots().map((s) => s.docs.map(_fromDoc).toList());
 

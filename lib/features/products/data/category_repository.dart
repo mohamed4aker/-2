@@ -11,6 +11,9 @@ abstract class CategoryRepository {
   Future<ProductCategory> addCategory(ProductCategory category);
   Future<ProductCategory> updateCategory(ProductCategory category);
   Future<void> deleteCategory(String id);
+
+  /// بث حي للتصنيفات — نفس فكرة [ProductRepository.watchProducts].
+  Stream<List<ProductCategory>>? watchCategories() => null;
 }
 
 /// تنفيذ محلي: التصنيفات محفوظة على الجهاز.
@@ -48,6 +51,9 @@ class MockCategoryRepository implements CategoryRepository {
       jsonEncode(_cache!.map((c) => c.toJson()).toList()),
     );
   }
+
+  @override
+  Stream<List<ProductCategory>>? watchCategories() => null;
 
   @override
   Future<List<ProductCategory>> fetchCategories() async {

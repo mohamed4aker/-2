@@ -16,6 +16,13 @@ abstract class OrderRepository {
     PaymentStatus status,
     String? transactionId,
   );
+
+  /// بث حي لكل الطلبات — لوحة الأدمن بتشوف الطلب الجديد وهو نازل.
+  /// بيرجّع null في التخزين المحلي.
+  Stream<List<Order>>? watchAllOrders() => null;
+
+  /// بث حي لطلبات عميل واحد — شاشة "طلباتي" بتتحدث لوحدها.
+  Stream<List<Order>>? watchUserOrders(String userId) => null;
 }
 
 /// تنفيذ تجريبي في الذاكرة مع طلبات جاهزة لعرض لوحة تحكم الأدمن.
@@ -243,6 +250,12 @@ class MockOrderRepository implements OrderRepository {
       ),
     ];
   }
+
+  @override
+  Stream<List<Order>>? watchAllOrders() => null;
+
+  @override
+  Stream<List<Order>>? watchUserOrders(String userId) => null;
 
   @override
   Future<List<Order>> fetchAllOrders() async {

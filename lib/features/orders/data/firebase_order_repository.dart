@@ -24,6 +24,7 @@ class FirebaseOrderRepository implements OrderRepository {
   }
 
   /// بث حي لكل الطلبات — لوحة تحكم الأدمن بتتحدث لحظياً.
+  @override
   Stream<List<Order>> watchAllOrders() => _collection
       .orderBy('createdAt', descending: true)
       .snapshots()
@@ -39,6 +40,7 @@ class FirebaseOrderRepository implements OrderRepository {
     return list;
   }
 
+  @override
   Stream<List<Order>> watchUserOrders(String userId) => _collection
       .where('userId', isEqualTo: userId)
       .snapshots()

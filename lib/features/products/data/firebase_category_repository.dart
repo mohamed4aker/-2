@@ -25,6 +25,7 @@ class FirebaseCategoryRepository implements CategoryRepository {
     return snapshot.docs.map(_fromDoc).toList();
   }
 
+  @override
   Stream<List<ProductCategory>> watchCategories() =>
       _collection.snapshots().map((s) => s.docs.map(_fromDoc).toList());
 

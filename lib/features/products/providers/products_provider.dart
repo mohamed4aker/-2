@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../core/di/repository_factory.dart';
@@ -199,12 +201,58 @@ class ProductsProvider extends ChangeNotifier {
       _products = results[0] as List<Product>;
       _categories = results[1] as List<ProductCategory>;
       _loaded = true;
+      _startWatching();
     } catch (e) {
       _error = 'تعذر تحميل المنتجات، حاول مرة أخرى';
     } finally {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  // ==================== التحديث الحي ====================
+
+  StreamSubscription<List<Product>>? _productsSub;
+  StreamSubscription<List<ProductCategory>>? _categoriesSub;
+
+  /// بيفضل سامع للسيرفر، فأي منتج يضيفه صاحب المتجر يظهر عند العملاء
+  /// في نفس اللحظة من غير ما يقفلوا التطبيق أو يسحبوا الشاشة لتحت.
+  ///
+  /// في الوضع المحلي المستودعات بترجّع null فالدالة دي مش بتعمل حاجة.
+  void _startWatching() {
+    if (_productsSub != null || _categoriesSub != null) return;
+
+    final productStream = _productRepository.watchProducts();
+    if (productStream != null) {
+      _productsSub = productStream.listen(
+        (items) {
+          _products = items;
+          _error = null;
+          notifyListeners();
+        },
+        onError: (_) {
+          // انقطاع مؤقت في النت — بنسيب آخر بيانات ظاهرة زي ما هي.
+        },
+      );
+    }
+
+    final categoryStream = _categoryRepository.watchCategories();
+    if (categoryStream != null) {
+      _categoriesSub = categoryStream.listen(
+        (items) {
+          _categories = items;
+          notifyListeners();
+        },
+        onError: (_) {},
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _productsSub?.cancel();
+    _categoriesSub?.cancel();
+    super.dispose();
   }
 
   // ---------- عمليات الأدمن ----------

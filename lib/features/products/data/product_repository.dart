@@ -15,6 +15,12 @@ abstract class ProductRepository {
   Future<Product> addProduct(Product product);
   Future<Product> updateProduct(Product product);
   Future<void> deleteProduct(String id);
+
+  /// بث حي للمنتجات — أي منتج يضيفه صاحب المتجر يوصل لموبايلات العملاء
+  /// المفتوحة في نفس اللحظة من غير ما يقفلوا التطبيق ويفتحوه.
+  ///
+  /// بيرجّع null في التخزين المحلي (مفيش سيرفر يبعت تحديثات).
+  Stream<List<Product>>? watchProducts() => null;
 }
 
 /// تنفيذ محلي: المنتجات محفوظة على الجهاز وبتفضل موجودة بعد قفل التطبيق.
@@ -55,6 +61,10 @@ class MockProductRepository implements ProductRepository {
       jsonEncode(_cache!.map((p) => p.toJson()).toList()),
     );
   }
+
+  /// التخزين المحلي مفيهوش بث حي — مفيش سيرفر يبعت تحديثات.
+  @override
+  Stream<List<Product>>? watchProducts() => null;
 
   @override
   Future<List<Product>> fetchProducts() async {

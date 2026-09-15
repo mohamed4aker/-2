@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../core/di/repository_factory.dart';
@@ -91,6 +93,7 @@ class OrdersProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _allOrders = await _repository.fetchAllOrders();
+      _watchAll();
     } finally {
       _loading = false;
       notifyListeners();
@@ -102,10 +105,56 @@ class OrdersProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _myOrders = await _repository.fetchUserOrders(userId);
+      _watchMine(userId);
     } finally {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  // ==================== التحديث الحي ====================
+
+  StreamSubscription<List<Order>>? _allSub;
+  StreamSubscription<List<Order>>? _mineSub;
+  String? _watchedUserId;
+
+  /// لوحة الأدمن بتفضل سامعة للسيرفر، فالطلب الجديد بيظهر وهو نازل
+  /// من غير ما صاحب المتجر يسحب الشاشة لتحت.
+  void _watchAll() {
+    if (_allSub != null) return;
+    final stream = _repository.watchAllOrders();
+    if (stream == null) return;
+    _allSub = stream.listen(
+      (orders) {
+        _allOrders = orders;
+        notifyListeners();
+      },
+      onError: (_) {},
+    );
+  }
+
+  /// شاشة "طلباتي" بتتحدث لوحدها لما صاحب المتجر يغيّر حالة الطلب.
+  void _watchMine(String userId) {
+    // لو اتغيّر المستخدم (خروج ودخول بحساب تاني) بنبدأ اشتراك جديد.
+    if (_watchedUserId == userId && _mineSub != null) return;
+    _mineSub?.cancel();
+    _watchedUserId = userId;
+    final stream = _repository.watchUserOrders(userId);
+    if (stream == null) return;
+    _mineSub = stream.listen(
+      (orders) {
+        _myOrders = orders;
+        notifyListeners();
+      },
+      onError: (_) {},
+    );
+  }
+
+  @override
+  void dispose() {
+    _allSub?.cancel();
+    _mineSub?.cancel();
+    super.dispose();
   }
 
   Future<Order> placeOrder({
