@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- الأيقونة التكيفية لأندرويد 8 وأحدث: خلفية سوداء + حرف M أبيض.
+     أندرويد بيقص الشكل حسب إعدادات الموبايل (دايرة / مربع مدوّر)،
+     وكل المحتوى محطوط جوه المنطقة الآمنة عشان ميتقصّش. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
